@@ -1,13 +1,13 @@
 "use client"
 
-import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 import { Label } from "@radix-ui/react-label";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { loginAction } from "@/app/actions/auth";
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { EyeIcon, EyeOffIcon } from "../components/ui/icons";
 
 const initialState = {
     message: "",
@@ -16,6 +16,7 @@ const initialState = {
 
 export function LoginForm() {
     const [state, action, isPending] = useActionState(loginAction, initialState);
+    const [showPassword, setShowPassword] = useState(false);
 
     useEffect(() => {
         if (state.message) {
@@ -73,17 +74,18 @@ export function LoginForm() {
                 </div>
                 <div className="grid gap-2">
                     <Label htmlFor="password">Password</Label>
-                    <div className="relative">
+                    <div className="relative flex items-center"> {/* Added flex and items-center */}
                         <Input
                             id="password"
                             name="password"
                             placeholder="••••••••"
-                            type="password"
+                            type={showPassword ? "text" : "password"}
                             autoCapitalize="none"
                             autoComplete="current-password"
                             required
-                            className="pl-10 bg-secondary/50 border-border/50"
+                            className="pl-10 pr-10 bg-secondary/50 border-border/50 h-11" // Ensure height matches button scale
                         />
+                        {/* Lock Icon */}
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
                             viewBox="0 0 24 24"
@@ -92,11 +94,29 @@ export function LoginForm() {
                             strokeWidth="2"
                             strokeLinecap="round"
                             strokeLinejoin="round"
-                            className="absolute left-3 top-3 h-4 w-4 text-muted-foreground"
+                            className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"
                         >
                             <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
                             <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                         </svg>
+
+                        {/* Eye Button */}
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 text-muted-foreground hover:bg-transparent"
+                            onClick={() => setShowPassword(!showPassword)}
+                        >
+                            {showPassword ? (
+                                <EyeOffIcon className="h-4 w-4" />
+                            ) : (
+                                <EyeIcon className="h-4 w-4" />
+                            )}
+                            <span className="sr-only">
+                                {showPassword ? "Hide password" : "Show password"}
+                            </span>
+                        </Button>
                     </div>
                 </div>
                 <Button className="w-full h-11 text-base" disabled={isPending}>

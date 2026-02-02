@@ -1,5 +1,8 @@
 "use server";
 
+import { createSession, deleteSession } from "@/app/lib/session";
+import { redirect } from "next/navigation";
+
 interface LoginState {
     message: string;
     error?: {
@@ -8,9 +11,6 @@ interface LoginState {
     };
     success?: boolean;
 }
-
-import { createSession, deleteSession } from "@/app/lib/session";
-import { redirect } from "next/navigation";
 
 export async function logoutAction() {
     await deleteSession();
@@ -40,7 +40,6 @@ export async function loginAction(
         });
 
         const data = await response.json();
-        // console.log("Response : ", data);
         if (!response.ok) {
             return {
                 message: data?.message ?? "Invalid credentials",

@@ -8,7 +8,9 @@ import {
     ShieldCheck,
     Search,
     Bell,
-    Settings
+    Settings,
+    Eye,
+    EyeOff
 } from "lucide-react";
 
 export const DashboardIcon = LayoutDashboard;
@@ -21,3 +23,5 @@ export const PermissionIcon = ShieldCheck;
 export const SearchIcon = Search;
 export const BellIcon = Bell;
 export const SettingsIcon = Settings;
+export const EyeIcon = Eye;
+export const EyeOffIcon = EyeOff;

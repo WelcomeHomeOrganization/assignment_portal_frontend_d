@@ -1,6 +1,6 @@
 import "server-only";
-import { SignJWT, jwtVerify } from "jose";
-import { cookies } from "next/headers";
+import {EncryptJWT, SignJWT, jwtDecrypt, jwtVerify} from "jose";
+import {cookies} from "next/headers";
 
 export interface SessionPayload {
     accessToken: string;
@@ -13,24 +13,47 @@ export interface SessionPayload {
 }
 
 
-const secretKey = process.env.SESSION_SECRET || "default_secret_key_change_me_in_production";
-const encodedKey = new TextEncoder().encode(secretKey);
+const secretKey = process.env.SESSION_SECRET || "Z3Q6cG+7wV0Zk0vZQ6KZ6bZf+T1lP3ZJ4D7L1zR8C2M=";
+// const encodedKey = new TextEncoder().encode(secretKey);
+const encodedKey = Buffer.from(secretKey, "base64");
 
-export async function encrypt(payload: any) {
-    return new SignJWT(payload)
-        .setProtectedHeader({ alg: "HS256" })
+// export async function encrypt(payload: any) {
+//     return new SignJWT(payload)
+//         .setProtectedHeader({ alg: "HS256" })
+//         .setIssuedAt()
+//         .setExpirationTime("7d")
+//         .sign(encodedKey);
+// }
+
+export async function encrypt(payload: SessionPayload) {
+    return await new EncryptJWT(payload as any)
+        .setProtectedHeader({alg: "dir", enc: "A256GCM"})
         .setIssuedAt()
         .setExpirationTime("7d")
-        .sign(encodedKey);
+        .encrypt(encodedKey);
 }
 
-export async function decrypt(session: string | undefined = ""): Promise<SessionPayload | null> {
+
+// export async function decrypt(session: string | undefined = ""): Promise<SessionPayload | null> {
+//     try {
+//         const { payload } = await jwtVerify(session, encodedKey, {
+//             algorithms: ["HS256"],
+//         });
+//         return payload as unknown as SessionPayload;
+//     } catch (error) {
+//         return null;
+//     }
+// }
+
+export async function decrypt(
+    session: string | undefined
+): Promise<SessionPayload | null> {
+    if (!session) return null;
+
     try {
-        const { payload } = await jwtVerify(session, encodedKey, {
-            algorithms: ["HS256"],
-        });
-        return payload as unknown as SessionPayload;
-    } catch (error) {
+        const {payload} = await jwtDecrypt(session, encodedKey);
+        return payload as any;
+    } catch {
         return null;
     }
 }
@@ -39,7 +62,7 @@ export async function createSession(accessToken: string, refreshToken: string, u
     // Encrypt the tokens before storing them in the cookie
     // We can store them individually or as a single session object
     // Here we store them as a single session token for simplicity and atomicity
-    const session = await encrypt({ accessToken, refreshToken, user });
+    const session = await encrypt({accessToken, refreshToken, user});
     const cookieStore = await cookies();
 
     cookieStore.set("session", session, {

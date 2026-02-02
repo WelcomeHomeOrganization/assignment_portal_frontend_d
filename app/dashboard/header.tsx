@@ -3,12 +3,11 @@
 import {
     BellIcon,
     SearchIcon,
-    SettingsIcon
 } from "@/app/components/ui/icons";
-import { Input } from "@/app/components/ui/input";
-import { Button } from "@/app/components/ui/button";
-import { ModeToggle } from "@/app/components/ui/mode-toggle";
-import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
+import {Input} from "@/app/components/ui/input";
+import {Button} from "@/app/components/ui/button";
+import {ModeToggle} from "@/app/components/ui/mode-toggle";
+import {Avatar, AvatarFallback, AvatarImage} from "@/app/components/ui/avatar";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -17,7 +16,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/app/components/ui/dropdown-menu";
-import { logoutAction } from "@/app/actions/auth";
+import {logoutAction} from "@/app/actions/auth";
 
 interface DashboardHeaderProps {
     user?: {
@@ -27,7 +26,7 @@ interface DashboardHeaderProps {
     }
 }
 
-export function DashboardHeader({ user }: DashboardHeaderProps) {
+export function DashboardHeader({user}: DashboardHeaderProps) {
     const initials = user?.name
         ? user.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
         : "AD";
@@ -36,7 +35,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
         <header className="flex h-16 items-center justify-between border-b bg-background px-6">
             <div className="flex items-center gap-4 w-1/3">
                 <div className="relative w-full max-w-sm">
-                    <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"/>
                     <Input
                         type="search"
                         placeholder="Search..."
@@ -47,17 +46,17 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
 
             <div className="flex items-center gap-4">
                 <Button variant="ghost" size="icon" className="relative">
-                    <BellIcon className="h-5 w-5" />
-                    <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-600" />
+                    <BellIcon className="h-5 w-5"/>
+                    <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-600"/>
                 </Button>
 
-                <ModeToggle />
+                <ModeToggle/>
 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                             <Avatar className="h-9 w-9">
-                                <AvatarImage src="" alt={user?.name || "User"} />
+                                <AvatarImage src="" alt={user?.name || "User"}/>
                                 <AvatarFallback>{initials}</AvatarFallback>
                             </Avatar>
                         </Button>
@@ -71,7 +70,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
                                 </p>
                             </div>
                         </DropdownMenuLabel>
-                        <DropdownMenuSeparator />
+                        <DropdownMenuSeparator/>
                         <DropdownMenuItem>
                             Profile
                         </DropdownMenuItem>
@@ -81,7 +80,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
                         <DropdownMenuItem>
                             New Team
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator />
+                        <DropdownMenuSeparator/>
                         <DropdownMenuItem
                             className="text-red-600 cursor-pointer"
                             onClick={() => logoutAction()}

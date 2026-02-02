@@ -1,6 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { decrypt, encrypt } from "@/app/lib/session";
-import { cookies } from "next/headers";
+import {NextRequest, NextResponse} from "next/server";
+import {decrypt, encrypt} from "@/app/lib/session";
 
 // Define protected routes
 const protectedRoutes = ["/dashboard"];
@@ -24,18 +23,18 @@ export default async function middleware(req: NextRequest) {
     if (isPublicRoute && session?.accessToken && path === "/") {
         return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
     }
-    
+
     // 4. Verify Token with Backend if processing a protected route
     if (isProtectedRoute && session?.accessToken) {
         const verifyRes = await fetch(`${process.env.BACKEND_LINK}/auth/verify`, {
-             method: "POST",
-             headers: {
-                 "Authorization": `Bearer ${session.accessToken}`
-             }
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${session.accessToken}`
+            }
         });
 
         if (verifyRes.ok) {
-             return NextResponse.next();
+            return NextResponse.next();
         }
 
         // 5. Token Expired/Invalid -> Try Refresh
@@ -43,8 +42,8 @@ export default async function middleware(req: NextRequest) {
             try {
                 const refreshRes = await fetch(`${process.env.BACKEND_LINK}/auth/refresh`, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ refresh_token: session.refreshToken })
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({refresh_token: session.refreshToken})
                 });
 
                 if (refreshRes.ok) {
@@ -54,16 +53,16 @@ export default async function middleware(req: NextRequest) {
                     // Assume we keep old one if not provided, but spec says response has access_token. 
                     // Wait, spec said: { access_token: string }.
                     // Let's reuse existing refresh token if not provided.
-                    
+
                     const newSessionPayload = {
                         accessToken: newAccessToken,
-                        refreshToken: data.refresh_token || session.refreshToken 
+                        refreshToken: data.refresh_token || session.refreshToken
                     };
 
                     // We need to update the cookie. 
                     // Since we are in Middleware, we can't easily use "createSession" from lib because it uses `cookies()` helper which is read-only in some contexts or tricky.
                     // But `createSession` uses `cookies().set(...)` which works in Server Actions. In Middleware, we must set response cookies.
-                    
+
                     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
                     const newSessionToken = await encrypt(newSessionPayload);
 
@@ -75,7 +74,7 @@ export default async function middleware(req: NextRequest) {
                         sameSite: "lax",
                         path: "/",
                     });
-                    
+
                     return response;
                 }
             } catch (err) {
