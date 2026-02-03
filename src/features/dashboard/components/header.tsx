@@ -34,7 +34,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
         <header className="flex h-16 items-center justify-between border-b bg-background px-4 md:px-6">
             <div className="flex items-center gap-4 w-full md:w-1/3">
                 {/* Spacer for the mobile menu button which is 'fixed' and absolute positions itself */}
-                <div className="w-10 md:hidden flex-shrink-0" />
+                <div className="w-10 md:hidden shrink-0" />
 
                 <div className="relative w-full max-w-sm hidden sm:block">
                     <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />

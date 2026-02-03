@@ -51,3 +51,4 @@ export const UserIcon = User;
 export const MenuIcon = Menu;
 export const CloseIcon = X;
 export const EmployeeIcon = IdCardIcon;
+export const UsersIcon = Users;

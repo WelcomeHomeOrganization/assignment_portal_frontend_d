@@ -1,6 +1,6 @@
 'use client';
 
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
     DashboardIcon,
     PermissionIcon,
@@ -8,11 +8,11 @@ import {
     TeamIcon,
     MenuIcon,
     CloseIcon,
-    EmployeeIcon
+    EmployeeIcon, UsersIcon
 } from "@/components/ui/icons";
-import {Button} from "@/components/ui/button";
-import {NavItem} from "./nav-item";
-import {cn} from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { NavItem } from "./nav-item";
+import { cn } from "@/lib/utils";
 
 export function Sidebar() {
     const [isOpen, setIsOpen] = useState(false);
@@ -28,7 +28,7 @@ export function Sidebar() {
                 className="md:hidden fixed top-3 left-4 z-50 h-10 w-10"
                 onClick={toggleSidebar}
             >
-                {isOpen ? <CloseIcon/> : <MenuIcon/>}
+                {isOpen ? <CloseIcon /> : <MenuIcon />}
             </Button>
 
             {/* Overlay for mobile */}
@@ -50,11 +50,11 @@ export function Sidebar() {
                 </div>
 
                 <nav className="flex-1 space-y-2">
-                    <NavItem href="/dashboard" icon={DashboardIcon} label="Dashboard"/>
-                    <NavItem href="/dashboard/team" icon={TeamIcon} label="Team"/>
-                    <NavItem href="/dashboard/tasks" icon={TaskIcon} label="Tasks"/>
-                    <NavItem href="/dashboard/permissions" icon={PermissionIcon} label="Permissions"/>
-                    <NavItem href="/employees" icon={EmployeeIcon} label="Employees"/>
+                    <NavItem href="/dashboard" icon={DashboardIcon} label="Dashboard" />
+                    <NavItem href="/dashboard/team" icon={TeamIcon} label="Team" />
+                    <NavItem href="/dashboard/tasks" icon={TaskIcon} label="Tasks" />
+                    <NavItem href="/dashboard/permissions" icon={PermissionIcon} label="Permissions" />
+                    <NavItem href="/dashboard/users" icon={UsersIcon} label="Users" />
                 </nav>
 
                 <Button className="w-full mt-auto">
