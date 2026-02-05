@@ -1,7 +1,8 @@
 "use server";
 
-import { createSession, deleteSession } from "@/lib/session";
+import { createSession, deleteSession, decrypt } from "@/lib/session";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 
 interface LoginState {
     message: string;
@@ -13,6 +14,42 @@ interface LoginState {
 }
 
 export async function logoutAction() {
+    try {
+        // Get session tokens before deleting
+        const cookieStore = await cookies();
+        const sessionCookie = cookieStore.get("session")?.value;
+
+        if (sessionCookie) {
+            const session = await decrypt(sessionCookie);
+
+            if (session?.accessToken && session?.refreshToken) {
+                // Call backend logout API
+                const baseUrl = process.env.BACKEND_LINK;
+
+                if (baseUrl) {
+                    try {
+                        await fetch(`${baseUrl}/auth/logout`, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "Authorization": `Bearer ${session.accessToken}`
+                            },
+                            body: JSON.stringify({
+                                refresh_token: session.refreshToken
+                            })
+                        });
+                    } catch (error) {
+                        console.error("Backend logout failed:", error);
+                        // Continue with session deletion even if backend call fails
+                    }
+                }
+            }
+        }
+    } catch (error) {
+        console.error("Logout error:", error);
+    }
+
+    // Always delete the session cookie
     await deleteSession();
     redirect("/");
 }
