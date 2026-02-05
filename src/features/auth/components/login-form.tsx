@@ -1,12 +1,12 @@
 "use client"
 
-import {EyeIcon, EyeOffIcon, ShieldCheck} from "lucide-react";
+import { EyeIcon, EyeOffIcon, ShieldCheck } from "lucide-react";
 import { Label } from "@radix-ui/react-label";
 import { useActionState, useEffect, useState } from "react";
 import { toast } from "sonner";
-import {Input} from "@/components/ui/input";
-import {Button} from "@/components/ui/button";
-import {loginAction} from "@/services/auth.service";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { loginAction } from "@/services/auth.service";
 
 const initialState = {
     message: "",

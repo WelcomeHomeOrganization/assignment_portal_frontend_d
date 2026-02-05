@@ -98,3 +98,138 @@ export async function getUsers(page: number = 1, limit: number = 10): Promise<Ge
         return emptyResult;
     }
 }
+
+export interface EmployeeWithoutUser {
+    id: string;
+    staffId: string;
+    firstName: string;
+    lastName: string;
+}
+
+export interface CreateUserResponse {
+    success: boolean;
+    user?: User;
+    message?: string;
+}
+
+export interface UpdateUserResponse {
+    success: boolean;
+    user?: User;
+    message?: string;
+}
+
+export async function getEmployeesWithoutUser(): Promise<EmployeeWithoutUser[]> {
+    const baseUrl = process.env.BACKEND_LINK;
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get("session")?.value;
+    const session = await decrypt(sessionCookie);
+
+    if (!session?.accessToken) {
+        return [];
+    }
+
+    try {
+        const response = await fetch(`${baseUrl}/employee/without-user`, {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${session.accessToken}`,
+                "Content-Type": "application/json",
+            },
+        });
+
+        if (!response.ok) {
+            console.error("Failed to fetch employees without user:", response.statusText);
+            return [];
+        }
+
+        const data = await response.json();
+        return data.employees || [];
+    } catch (error) {
+        console.error("Error fetching employees without user:", error);
+        return [];
+    }
+}
+
+export async function createUser(
+    employeeId: string,
+    email: string,
+    password: string
+): Promise<CreateUserResponse> {
+    const baseUrl = process.env.BACKEND_LINK;
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get("session")?.value;
+    const session = await decrypt(sessionCookie);
+
+    if (!session?.accessToken) {
+        return { success: false, message: "Unauthorized" };
+    }
+
+    try {
+        const response = await fetch(`${baseUrl}/user`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${session.accessToken}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ employeeId, email, password }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            return {
+                success: false,
+                message: data.message || "Failed to create user",
+            };
+        }
+
+        return { success: true, user: data.user, message: "User created successfully" };
+    } catch (error) {
+        console.error("Error creating user:", error);
+        return { success: false, message: "An unexpected error occurred" };
+    }
+}
+
+export async function updateUser(
+    userId: string,
+    data: {
+        employeeId?: string;
+        email?: string;
+        password?: string;
+        status?: string;
+    }
+): Promise<UpdateUserResponse> {
+    const baseUrl = process.env.BACKEND_LINK;
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get("session")?.value;
+    const session = await decrypt(sessionCookie);
+
+    if (!session?.accessToken) {
+        return { success: false, message: "Unauthorized" };
+    }
+
+    try {
+        const response = await fetch(`${baseUrl}/user/${userId}`, {
+            method: "PATCH",
+            headers: {
+                "Authorization": `Bearer ${session.accessToken}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(data),
+        });
+
+        const responseData = await response.json();
+
+        if (!response.ok) {
+            return {
+                success: false,
+                message: responseData.message || "Failed to update user",
+            };
+        }
+
+        return { success: true, user: responseData.user, message: "User updated successfully" };
+    } catch (error) {
+        console.error("Error updating user:", error);
+        return { success: false, message: "An unexpected error occurred" };
+    }
+}

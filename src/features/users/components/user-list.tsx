@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { User } from "@/features/users/types";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
     Table,
@@ -13,6 +15,8 @@ import {
 } from "@/components/ui/table";
 import { Pagination } from "@/components/ui/pagination";
 import { useRouter, useSearchParams } from "next/navigation";
+import { UpdateUserModal } from "./update-user-modal";
+import { Pencil } from "lucide-react";
 
 interface UserTableProps {
     users: User[];
@@ -27,6 +31,8 @@ interface UserTableProps {
 export function UserTable({ users, meta }: UserTableProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const [selectedUser, setSelectedUser] = useState<User | null>(null);
+    const [updateModalOpen, setUpdateModalOpen] = useState(false);
 
     // Calculate serial number based on page and limit
     const getSerialNumber = (index: number) => {
@@ -37,6 +43,15 @@ export function UserTable({ users, meta }: UserTableProps) {
         const params = new URLSearchParams(searchParams.toString());
         params.set("page", page.toString());
         router.push(`?${params.toString()}`);
+    };
+
+    const handleEdit = (user: User) => {
+        setSelectedUser(user);
+        setUpdateModalOpen(true);
+    };
+
+    const handleUpdateSuccess = () => {
+        router.refresh();
     };
 
     if (users.length === 0) {
@@ -66,6 +81,7 @@ export function UserTable({ users, meta }: UserTableProps) {
                             <TableHead>Max Attempts</TableHead>
                             <TableHead>Locked Until</TableHead>
                             <TableHead>Created At</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -141,6 +157,15 @@ export function UserTable({ users, meta }: UserTableProps) {
                                         day: "numeric",
                                     })}
                                 </TableCell>
+                                <TableCell className="text-right">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleEdit(user)}
+                                    >
+                                        <Pencil className="h-4 w-4" />
+                                    </Button>
+                                </TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
@@ -160,6 +185,15 @@ export function UserTable({ users, meta }: UserTableProps) {
                     />
                 )}
             </div>
+
+            {selectedUser && (
+                <UpdateUserModal
+                    user={selectedUser}
+                    open={updateModalOpen}
+                    onOpenChange={setUpdateModalOpen}
+                    onSuccess={handleUpdateSuccess}
+                />
+            )}
         </div>
     );
 }
