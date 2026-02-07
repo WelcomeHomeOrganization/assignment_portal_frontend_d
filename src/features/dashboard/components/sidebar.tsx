@@ -60,10 +60,6 @@ export function Sidebar() {
                     <NavItem href="/dashboard/permissions" icon={PermissionIcon} label="Permissions" />
                     <NavItem href="/dashboard/users" icon={UsersIcon} label="Users" />
                 </nav>
-
-                <Button className="w-full mt-auto">
-                    + New Story
-                </Button>
             </aside>
         </>
     );
