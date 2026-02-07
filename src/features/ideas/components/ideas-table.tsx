@@ -18,6 +18,7 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { EditIdeaModal } from "./edit-idea-modal";
 
 interface IdeasTableProps {
     ideas: Idea[];
@@ -27,9 +28,10 @@ interface IdeasTableProps {
         total: number;
         totalPages: number;
     };
+    showActions?: boolean;
 }
 
-export function IdeasTable({ ideas, meta }: IdeasTableProps) {
+export function IdeasTable({ ideas, meta, showActions = false }: IdeasTableProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -65,6 +67,7 @@ export function IdeasTable({ ideas, meta }: IdeasTableProps) {
                             <TableHead>Title</TableHead>
                             <TableHead>Description</TableHead>
                             <TableHead>Staff ID</TableHead>
+                            {showActions && <TableHead className="text-center">Actions</TableHead>}
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -96,6 +99,13 @@ export function IdeasTable({ ideas, meta }: IdeasTableProps) {
                                             </TooltipContent>
                                         </Tooltip>
                                     </TableCell>
+                                    {showActions && (
+                                        <TableCell>
+                                            <div className="flex items-center justify-center gap-2">
+                                                <EditIdeaModal idea={idea} />
+                                            </div>
+                                        </TableCell>
+                                    )}
                                 </TableRow>
                             ))}
                         </TooltipProvider>

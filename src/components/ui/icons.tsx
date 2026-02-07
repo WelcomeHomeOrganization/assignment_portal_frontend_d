@@ -23,7 +23,8 @@ import {
     User,
     Menu,
     X,
-    IdCardIcon
+    IdCardIcon,
+    Lightbulb
 } from "lucide-react";
 
 export const DashboardIcon = LayoutDashboard;
@@ -52,3 +53,4 @@ export const MenuIcon = Menu;
 export const CloseIcon = X;
 export const EmployeeIcon = IdCardIcon;
 export const UsersIcon = Users;
+export const IdeaIcon = Lightbulb;

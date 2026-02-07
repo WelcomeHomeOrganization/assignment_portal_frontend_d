@@ -8,7 +8,9 @@ import {
     TeamIcon,
     MenuIcon,
     CloseIcon,
-    EmployeeIcon, UsersIcon
+    EmployeeIcon,
+    UsersIcon,
+    IdeaIcon
 } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { NavItem } from "./nav-item";
@@ -51,6 +53,8 @@ export function Sidebar() {
 
                 <nav className="flex-1 space-y-2">
                     <NavItem href="/dashboard" icon={DashboardIcon} label="Dashboard" />
+                    <NavItem href="/dashboard/ideas" icon={IdeaIcon} label="Ideas" />
+                    <NavItem href="/dashboard/my-ideas" icon={IdeaIcon} label="My Ideas" />
                     <NavItem href="/dashboard/employees" icon={EmployeeIcon} label="Employees" />
                     <NavItem href="/dashboard/tasks" icon={TaskIcon} label="Tasks" />
                     <NavItem href="/dashboard/permissions" icon={PermissionIcon} label="Permissions" />
