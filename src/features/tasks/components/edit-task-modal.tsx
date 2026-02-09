@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import React, {useState, useEffect, useCallback} from "react";
+import {useRouter} from "next/navigation";
+import {Button} from "@/components/ui/button";
 import {
     Dialog,
     DialogContent,
@@ -11,9 +11,9 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import {Input} from "@/components/ui/input";
+import {Label} from "@/components/ui/label";
+import {Textarea} from "@/components/ui/textarea";
 import {
     Select,
     SelectContent,
@@ -21,15 +21,16 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
-import { updateTask } from "@/services/task.service";
-import { searchTasks } from "@/services/task.service";
-import { searchEmployees } from "@/services/employee.service";
-import { searchIdeas } from "@/services/idea.service";
-import { uploadFile, deleteFile } from "@/services/file.service";
-import { PriorityLevels, Task, TaskStatus } from "@/features/tasks/types";
-import { Loader2, Edit, Upload, X, FileIcon } from "lucide-react";
-import { AsyncSearchableSelect, SearchFunction } from "@/components/ui/async-searchable-select";
+import {toast} from "sonner";
+import {updateTask} from "@/services/task.service";
+import {searchTasks} from "@/services/task.service";
+import {searchEmployees} from "@/services/employee.service";
+import {searchIdeas} from "@/services/idea.service";
+import {uploadFile, deleteFile} from "@/services/file.service";
+import {PriorityLevels, Task, TaskStatus} from "@/features/tasks/types";
+import {Loader2, Edit, Upload, X, FileIcon, Check} from "lucide-react";
+import {AsyncSearchableSelect, SearchFunction} from "@/components/ui/async-searchable-select";
+import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 
 // Types for searchable items
 interface EmployeeItem {
@@ -56,7 +57,11 @@ interface EditTaskModalProps {
     onOpenChange: (open: boolean) => void;
 }
 
-export function EditTaskModal({ task, open, onOpenChange }: EditTaskModalProps) {
+const getInitials = (firstName: string, lastName: string) => {
+    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+};
+
+export function EditTaskModal({task, open, onOpenChange}: EditTaskModalProps) {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
 
@@ -161,6 +166,15 @@ export function EditTaskModal({ task, open, onOpenChange }: EditTaskModalProps) 
         };
     }, []);
 
+    // Memoized display and secondary value functions to avoid changing prop identity
+    const employeeDisplay = useCallback((emp: EmployeeItem) => `${emp.firstName} ${emp.lastName}`, []);
+    const employeeSecondary = useCallback((emp: EmployeeItem) => emp.staffId, []);
+    const ideaDisplay = useCallback((idea: IdeaItem) => idea.title, []);
+    const ideaSecondary = useCallback((idea: IdeaItem) => idea.description || "", []);
+    const taskDisplay = useCallback((t: TaskItem) => t.title, []);
+    // Memoize excludeIds arrays
+    const parentExcludeIds = React.useMemo(() => [task.id], [task.id]);
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
             setFiles(Array.from(e.target.files));
@@ -187,7 +201,7 @@ export function EditTaskModal({ task, open, onOpenChange }: EditTaskModalProps) 
 
         try {
             // Upload new files if any
-            let newFileIds: string[] = [];
+            const newFileIds: string[] = [];
             if (files.length > 0) {
                 setUploading(true);
                 for (const file of files) {
@@ -213,23 +227,18 @@ export function EditTaskModal({ task, open, onOpenChange }: EditTaskModalProps) 
             const allFileIds = [...remainingFileIds, ...newFileIds];
 
             // Prepare update data
-            const updateData: any = {
+            const updateData: Record<string, unknown> = {
                 title: formData.title,
                 description: formData.description || undefined,
                 priority: formData.priority,
                 status: formData.status,
-                assignedTo: selectedEmployees.length > 0 ? selectedEmployees.map(e => e.id) : undefined,
-                fileIds: allFileIds.length > 0 ? allFileIds : undefined,
+                assignedTo: selectedEmployees.length > 0 ? selectedEmployees.map(e => e.id) : [],
+                fileIds: allFileIds.length > 0 ? allFileIds : [],
+                parentId: selectedParentTask ? selectedParentTask.id : null,
+                ideaId: selectedIdea ? selectedIdea.id : null,
             };
 
-            if (selectedParentTask) {
-                updateData.parentId = selectedParentTask.id;
-            }
-
-            if (selectedIdea) {
-                updateData.ideaId = selectedIdea.id;
-            }
-
+            // console.log(updateData)
             const result = await updateTask(task.id, updateData);
 
             if (result.success) {
@@ -247,18 +256,57 @@ export function EditTaskModal({ task, open, onOpenChange }: EditTaskModalProps) 
         }
     };
 
-    const handleClose = () => {
+    const handleClose = (newOpen: boolean) => {
+        // Forward Radix dialog open state to parent, but prevent changes while loading
         if (!loading) {
-            onOpenChange(false);
+            onOpenChange(newOpen);
         }
     };
 
+    // Renderers
+    const renderEmployeeOption = (emp: EmployeeItem, isSelected: boolean) => (
+        <div className="flex items-center gap-3 w-full">
+            <div className="relative">
+                <Avatar className="h-8 w-8">
+                    <AvatarFallback>{getInitials(emp.firstName, emp.lastName)}</AvatarFallback>
+                </Avatar>
+                {isSelected && (
+                    <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full p-[2px]">
+                        <Check className="h-2 w-2"/>
+                    </div>
+                )}
+            </div>
+            <div className="flex flex-col">
+                <span className="text-sm font-medium">{emp.firstName} {emp.lastName}</span>
+                <span className="text-xs text-muted-foreground">{emp.staffId}</span>
+            </div>
+        </div>
+    );
+
+    const renderEmployeeSelected = (emp: EmployeeItem, onRemove?: (e: React.MouseEvent) => void) => (
+        <div className="inline-flex items-center gap-2 px-2 py-1 bg-secondary rounded-full border">
+            <Avatar className="h-5 w-5">
+                <AvatarFallback className="text-[10px]">{getInitials(emp.firstName, emp.lastName)}</AvatarFallback>
+            </Avatar>
+            <span className="text-xs font-medium">{emp.firstName} {emp.lastName}</span>
+            {onRemove && (
+                <div
+                    role="button"
+                    className="ml-1 rounded-full p-0.5 hover:bg-destructive/10 hover:text-destructive cursor-pointer"
+                    onClick={onRemove}
+                >
+                    <X className="h-3 w-3"/>
+                </div>
+            )}
+        </div>
+    );
+
     return (
         <Dialog open={open} onOpenChange={handleClose}>
-            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-150 max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
-                        <Edit className="h-5 w-5 text-primary" />
+                        <Edit className="h-5 w-5 text-primary"/>
                         Edit Task
                     </DialogTitle>
                     <DialogDescription>
@@ -275,7 +323,7 @@ export function EditTaskModal({ task, open, onOpenChange }: EditTaskModalProps) 
                             <Input
                                 id="title"
                                 value={formData.title}
-                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                onChange={(e) => setFormData({...formData, title: e.target.value})}
                                 required
                                 disabled={loading}
                             />
@@ -287,7 +335,7 @@ export function EditTaskModal({ task, open, onOpenChange }: EditTaskModalProps) 
                             <Textarea
                                 id="description"
                                 value={formData.description}
-                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                onChange={(e) => setFormData({...formData, description: e.target.value})}
                                 rows={4}
                                 disabled={loading}
                             />
@@ -300,12 +348,12 @@ export function EditTaskModal({ task, open, onOpenChange }: EditTaskModalProps) 
                                 <Select
                                     value={formData.priority}
                                     onValueChange={(value: PriorityLevels) =>
-                                        setFormData({ ...formData, priority: value })
+                                        setFormData({...formData, priority: value})
                                     }
                                     disabled={loading}
                                 >
                                     <SelectTrigger>
-                                        <SelectValue />
+                                        <SelectValue/>
                                     </SelectTrigger>
                                     <SelectContent>
                                         {Object.values(PriorityLevels).map((priority) => (
@@ -322,12 +370,12 @@ export function EditTaskModal({ task, open, onOpenChange }: EditTaskModalProps) 
                                 <Select
                                     value={formData.status}
                                     onValueChange={(value: TaskStatus) =>
-                                        setFormData({ ...formData, status: value })
+                                        setFormData({...formData, status: value})
                                     }
                                     disabled={loading}
                                 >
                                     <SelectTrigger>
-                                        <SelectValue />
+                                        <SelectValue/>
                                     </SelectTrigger>
                                     <SelectContent>
                                         {Object.values(TaskStatus).map((status) => (
@@ -347,11 +395,14 @@ export function EditTaskModal({ task, open, onOpenChange }: EditTaskModalProps) 
                                 mode="single"
                                 placeholder="Search parent task..."
                                 searchFn={searchTasksFn}
-                                displayValue={(t) => t.title}
+                                displayValue={taskDisplay}
                                 value={selectedParentTask}
-                                onChange={(val) => setSelectedParentTask(val as TaskItem | null)}
+                                onChange={(val) => {
+                                    const next = val as TaskItem | null;
+                                    setSelectedParentTask(prev => (prev?.id === next?.id ? prev : next));
+                                }}
                                 disabled={loading}
-                                excludeIds={[task.id]}
+                                excludeIds={parentExcludeIds}
                             />
                         </div>
 
@@ -362,10 +413,13 @@ export function EditTaskModal({ task, open, onOpenChange }: EditTaskModalProps) 
                                 mode="single"
                                 placeholder="Search ideas..."
                                 searchFn={searchIdeasFn}
-                                displayValue={(idea) => idea.title}
-                                secondaryValue={(idea) => idea.description || ""}
+                                displayValue={ideaDisplay}
+                                secondaryValue={ideaSecondary}
                                 value={selectedIdea}
-                                onChange={(val) => setSelectedIdea(val as IdeaItem | null)}
+                                onChange={(val) => {
+                                    const next = val as IdeaItem | null;
+                                    setSelectedIdea(prev => (prev?.id === next?.id ? prev : next));
+                                }}
                                 disabled={loading}
                             />
                         </div>
@@ -377,11 +431,21 @@ export function EditTaskModal({ task, open, onOpenChange }: EditTaskModalProps) 
                                 mode="multi"
                                 placeholder="Search employees..."
                                 searchFn={searchEmployeesFn}
-                                displayValue={(emp) => `${emp.firstName} ${emp.lastName}`}
-                                secondaryValue={(emp) => emp.staffId}
+                                displayValue={employeeDisplay}
+                                secondaryValue={employeeSecondary}
                                 value={selectedEmployees}
-                                onChange={(val) => setSelectedEmployees(val as EmployeeItem[])}
+                                onChange={(val) => {
+                                    const next = (val as EmployeeItem[]) || [];
+                                    setSelectedEmployees(prev => {
+                                        if (prev.length === next.length && prev.every((p, i) => p.id === next[i].id)) {
+                                            return prev;
+                                        }
+                                        return next;
+                                    });
+                                }}
                                 disabled={loading}
+                                renderOption={renderEmployeeOption}
+                                renderSelected={renderEmployeeSelected}
                             />
                         </div>
 
@@ -399,10 +463,10 @@ export function EditTaskModal({ task, open, onOpenChange }: EditTaskModalProps) 
                                             <div
                                                 key={doc.file.id}
                                                 className={`flex items-center justify-between p-2 border rounded ${isRemoved ? "opacity-50 line-through" : ""
-                                                    }`}
+                                                }`}
                                             >
                                                 <div className="flex items-center gap-2">
-                                                    <FileIcon className="h-4 w-4" />
+                                                    <FileIcon className="h-4 w-4"/>
                                                     <span className="text-sm">{doc.file.originalName}</span>
                                                 </div>
                                                 {!isRemoved && (
@@ -413,7 +477,7 @@ export function EditTaskModal({ task, open, onOpenChange }: EditTaskModalProps) 
                                                         onClick={() => handleRemoveExistingFile(doc.file.id)}
                                                         disabled={loading}
                                                     >
-                                                        <X className="h-4 w-4" />
+                                                        <X className="h-4 w-4"/>
                                                     </Button>
                                                 )}
                                             </div>
@@ -432,7 +496,7 @@ export function EditTaskModal({ task, open, onOpenChange }: EditTaskModalProps) 
                                     disabled={loading}
                                     className="flex-1"
                                 />
-                                <Upload className="h-4 w-4 text-muted-foreground" />
+                                <Upload className="h-4 w-4 text-muted-foreground"/>
                             </div>
 
                             {files.length > 0 && (
@@ -451,7 +515,7 @@ export function EditTaskModal({ task, open, onOpenChange }: EditTaskModalProps) 
                                                 onClick={() => handleRemoveFile(index)}
                                                 disabled={loading}
                                             >
-                                                <X className="h-4 w-4" />
+                                                <X className="h-4 w-4"/>
                                             </Button>
                                         </div>
                                     ))}
@@ -463,7 +527,7 @@ export function EditTaskModal({ task, open, onOpenChange }: EditTaskModalProps) 
                         <Button
                             type="button"
                             variant="outline"
-                            onClick={handleClose}
+                            onClick={() => handleClose(false)}
                             disabled={loading}
                         >
                             Cancel
@@ -471,7 +535,7 @@ export function EditTaskModal({ task, open, onOpenChange }: EditTaskModalProps) 
                         <Button type="submit" disabled={loading || uploading}>
                             {loading ? (
                                 <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
                                     {uploading ? "Uploading..." : "Updating..."}
                                 </>
                             ) : (

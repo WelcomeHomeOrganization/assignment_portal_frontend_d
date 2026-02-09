@@ -140,12 +140,12 @@ export interface TasksResponse {
 
 export interface UpdateTaskData {
     title?: string;
-    description?: string;
+    description?: string | null;
     priority?: PriorityLevels;
     status?: TaskStatus;
-    parentId?: string;
-    ideaId?: string;
-    assignedTo?: string[];
+    parentId?: string | null;
+    ideaId?: string | null;
+    assignedTo?: string[] | null;
     fileIds?: string[];
 }
 

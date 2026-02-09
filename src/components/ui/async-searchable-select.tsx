@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
@@ -47,6 +47,10 @@ interface AsyncSearchableSelectProps<T extends SearchableItem> {
     label?: string;
     /** Optional items to exclude from results (e.g., current task for parent selection) */
     excludeIds?: string[];
+    /** Optional custom renderer for dropdown options */
+    renderOption?: (item: T, isSelected: boolean) => React.ReactNode;
+    /** Optional custom renderer for selected item(s) in trigger */
+    renderSelected?: (item: T, onRemove?: (e: React.MouseEvent) => void) => React.ReactNode;
 }
 
 export function AsyncSearchableSelect<T extends SearchableItem>({
@@ -61,6 +65,8 @@ export function AsyncSearchableSelect<T extends SearchableItem>({
     pageSize = 20,
     debounceMs = 300,
     excludeIds = [],
+    renderOption,
+    renderSelected,
 }: AsyncSearchableSelectProps<T>) {
     const [isOpen, setIsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
@@ -182,7 +188,13 @@ export function AsyncSearchableSelect<T extends SearchableItem>({
     // Handle item selection
     const handleSelect = (item: T) => {
         if (mode === "single") {
-            onChange(item);
+            const currentSelected = value as T | null;
+            // Only call onChange if the selected item changed
+            if (currentSelected?.id !== item.id) {
+                // Defer parent update to avoid nested updates during commit refs
+                setTimeout(() => onChange(item), 0);
+            }
+            // close dropdown after selection
             setIsOpen(false);
             setSearchQuery("");
         } else {
@@ -190,9 +202,19 @@ export function AsyncSearchableSelect<T extends SearchableItem>({
             const isSelected = currentValue.some(v => v.id === item.id);
 
             if (isSelected) {
-                onChange(currentValue.filter(v => v.id !== item.id));
+                const newValue = currentValue.filter(v => v.id !== item.id);
+                // Guard: only update if different
+                if (newValue.length !== currentValue.length) {
+                    setTimeout(() => onChange(newValue), 0);
+                }
             } else {
-                onChange([...currentValue, item]);
+                // Add item immutably for multi-select
+                const newValue = [...currentValue, item];
+                // Guard: ensure we don't call onChange with identical ids
+                const same = newValue.length === currentValue.length && newValue.every((v, i) => v.id === currentValue[i].id);
+                if (!same) {
+                    setTimeout(() => onChange(newValue), 0);
+                }
             }
         }
     };
@@ -210,16 +232,31 @@ export function AsyncSearchableSelect<T extends SearchableItem>({
         e.stopPropagation();
         if (mode === "multi") {
             const currentValue = (value as T[]) || [];
-            onChange(currentValue.filter(v => v.id !== item.id));
+            const newValue = currentValue.filter(v => v.id !== item.id);
+            // Only call if changed
+            if (newValue.length !== currentValue.length) {
+                setTimeout(() => onChange(newValue), 0);
+            }
         } else {
-            onChange(null);
+            if ((value as T | null) !== null) {
+                setTimeout(() => onChange(null), 0);
+            }
         }
     };
 
     // Clear single selection
     const handleClear = (e: React.MouseEvent) => {
         e.stopPropagation();
-        onChange(mode === "multi" ? [] : null);
+        if (mode === "multi") {
+            const currentValue = (value as T[]) || [];
+            if (currentValue.length > 0) {
+                setTimeout(() => onChange([]), 0);
+            }
+        } else {
+            if ((value as T | null) !== null) {
+                setTimeout(() => onChange(null), 0);
+            }
+        }
     };
 
     // Render selected value(s) display
@@ -229,12 +266,21 @@ export function AsyncSearchableSelect<T extends SearchableItem>({
             if (!selected) {
                 return <span className="text-muted-foreground">{placeholder}</span>;
             }
+
+            if (renderSelected) {
+                return (
+                    <div className="flex items-center justify-between flex-1 overflow-hidden">
+                        {renderSelected(selected, !disabled ? handleClear : undefined)}
+                    </div>
+                );
+            }
+
             return (
-                <div className="flex items-center justify-between flex-1">
+                <div className="flex items-center justify-between flex-1 overflow-hidden">
                     <span className="truncate">{displayValue(selected)}</span>
                     {!disabled && (
                         <X
-                            className="h-4 w-4 text-muted-foreground hover:text-foreground ml-2 flex-shrink-0"
+                            className="h-4 w-4 text-muted-foreground hover:text-foreground ml-2 shrink-0"
                             onClick={handleClear}
                         />
                     )}
@@ -250,18 +296,23 @@ export function AsyncSearchableSelect<T extends SearchableItem>({
         return (
             <div className="flex flex-wrap gap-1 flex-1">
                 {selectedItems.map(item => (
-                    <span
-                        key={item.id}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary rounded-md text-xs"
-                    >
-                        {displayValue(item)}
-                        {!disabled && (
-                            <X
-                                className="h-3 w-3 cursor-pointer hover:text-primary/70"
-                                onClick={(e) => handleRemove(item, e)}
-                            />
+                    <React.Fragment key={item.id}>
+                        {renderSelected ? (
+                            renderSelected(item, !disabled ? (e) => handleRemove(item, e) : undefined)
+                        ) : (
+                            <span
+                                className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary rounded-md text-xs"
+                            >
+                                {displayValue(item)}
+                                {!disabled && (
+                                    <X
+                                        className="h-3 w-3 cursor-pointer hover:text-primary/70"
+                                        onClick={(e) => handleRemove(item, e)}
+                                    />
+                                )}
+                            </span>
                         )}
-                    </span>
+                    </React.Fragment>
                 ))}
             </div>
         );
@@ -270,12 +321,10 @@ export function AsyncSearchableSelect<T extends SearchableItem>({
     return (
         <div ref={containerRef} className="relative w-full">
             {/* Trigger button */}
-            <button
-                type="button"
+            <div
                 onClick={() => !disabled && setIsOpen(!isOpen)}
-                disabled={disabled}
                 className={cn(
-                    "flex min-h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background",
+                    "flex min-h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background cursor-pointer",
                     "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
                     disabled && "cursor-not-allowed opacity-50",
                     isOpen && "ring-2 ring-ring ring-offset-2"
@@ -283,14 +332,14 @@ export function AsyncSearchableSelect<T extends SearchableItem>({
             >
                 {renderSelectedDisplay()}
                 <ChevronDown className={cn(
-                    "h-4 w-4 text-muted-foreground transition-transform ml-2 flex-shrink-0",
+                    "h-4 w-4 text-muted-foreground transition-transform ml-2 shrink-0",
                     isOpen && "rotate-180"
                 )} />
-            </button>
+            </div>
 
             {/* Dropdown */}
             {isOpen && (
-                <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-md">
+                <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-md start-0">
                     {/* Search input */}
                     <div className="flex items-center border-b px-3 py-2">
                         <Search className="h-4 w-4 text-muted-foreground mr-2" />
@@ -307,7 +356,7 @@ export function AsyncSearchableSelect<T extends SearchableItem>({
                     </div>
 
                     {/* Results list */}
-                    <div className="max-h-[200px] overflow-y-auto">
+                    <div className="max-h-60 overflow-y-auto">
                         {error ? (
                             <div className="py-6 text-center text-sm text-destructive">
                                 {error}
@@ -324,6 +373,22 @@ export function AsyncSearchableSelect<T extends SearchableItem>({
                             <>
                                 {items.map(item => {
                                     const selected = isItemSelected(item);
+
+                                    if (renderOption) {
+                                        return (
+                                            <div
+                                                key={item.id}
+                                                onClick={() => handleSelect(item)}
+                                                className={cn(
+                                                    "cursor-pointer hover:bg-accent px-3 py-2",
+                                                    selected && "bg-accent/50"
+                                                )}
+                                            >
+                                                {renderOption(item, selected)}
+                                            </div>
+                                        );
+                                    }
+
                                     return (
                                         <div
                                             key={item.id}
@@ -363,7 +428,10 @@ export function AsyncSearchableSelect<T extends SearchableItem>({
                                             variant="ghost"
                                             size="sm"
                                             className="w-full"
-                                            onClick={handleLoadMore}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleLoadMore();
+                                            }}
                                             disabled={loadingMore}
                                         >
                                             {loadingMore ? (
