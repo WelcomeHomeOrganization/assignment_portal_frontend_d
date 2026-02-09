@@ -1,6 +1,4 @@
-import { getTaskById, getTasks } from "@/services/task.service";
-import { getEmployees } from "@/services/employee.service";
-import { getIdeas } from "@/services/idea.service";
+import { getTaskById } from "@/services/task.service";
 import { TaskIcon } from "@/components/ui/icons";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -62,28 +60,6 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
         notFound();
     }
 
-    // Fetch data for edit modal
-    const { employees } = await getEmployees(1, 1000);
-    const { ideas } = await getIdeas(1, 1000);
-    const { tasks } = await getTasks(1, 1000);
-
-    const employeesList = employees.map(emp => ({
-        id: emp.id,
-        staffId: emp.staffId,
-        firstName: emp.firstName,
-        lastName: emp.lastName,
-    }));
-
-    const ideasList = ideas.map(idea => ({
-        id: idea.id,
-        title: idea.title,
-    }));
-
-    const tasksList = tasks.map(t => ({
-        id: t.id,
-        title: t.title,
-    }));
-
     // Get current user from session
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get("session")?.value;
@@ -126,12 +102,7 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
                 <div className="flex gap-2">
                     {isCreator && (
                         <>
-                            <EditTaskButton
-                                task={task}
-                                employees={employeesList}
-                                ideas={ideasList}
-                                tasks={tasksList}
-                            />
+                            <EditTaskButton task={task} />
                             <ExtendDeadlineButton taskId={task.id} currentDeadline={deadlineToUse} />
                         </>
                     )}

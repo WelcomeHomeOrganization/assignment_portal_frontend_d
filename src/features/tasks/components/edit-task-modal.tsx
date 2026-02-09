@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,76 +21,145 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { updateTask } from "@/services/task.service";
+import { searchTasks } from "@/services/task.service";
+import { searchEmployees } from "@/services/employee.service";
+import { searchIdeas } from "@/services/idea.service";
 import { uploadFile, deleteFile } from "@/services/file.service";
 import { PriorityLevels, Task, TaskStatus } from "@/features/tasks/types";
 import { Loader2, Edit, Upload, X, FileIcon } from "lucide-react";
+import { AsyncSearchableSelect, SearchFunction } from "@/components/ui/async-searchable-select";
 
-interface Employee {
+// Types for searchable items
+interface EmployeeItem {
     id: string;
     staffId: string;
     firstName: string;
     lastName: string;
 }
 
-interface Idea {
+interface IdeaItem {
     id: string;
     title: string;
+    description?: string;
 }
 
-interface ParentTask {
+interface TaskItem {
     id: string;
     title: string;
 }
 
 interface EditTaskModalProps {
     task: Task;
-    employees: Employee[];
-    ideas: Idea[];
-    tasks: ParentTask[];
     open: boolean;
     onOpenChange: (open: boolean) => void;
 }
 
-export function EditTaskModal({ task, employees, ideas, tasks, open, onOpenChange }: EditTaskModalProps) {
+export function EditTaskModal({ task, open, onOpenChange }: EditTaskModalProps) {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
 
+    // Form state
     const [formData, setFormData] = useState({
         title: task.title,
         description: task.description || "",
         priority: task.priority,
         status: task.status,
-        parentId: task.parent?.id || "",
-        ideaId: task.idea?.id || "",
-        assignedTo: task.assigns.map(a => a.assignee.id),
     });
 
+    // Selected items for async selects
+    const [selectedEmployees, setSelectedEmployees] = useState<EmployeeItem[]>([]);
+    const [selectedIdea, setSelectedIdea] = useState<IdeaItem | null>(null);
+    const [selectedParentTask, setSelectedParentTask] = useState<TaskItem | null>(null);
+
+    // File handling
     const [files, setFiles] = useState<File[]>([]);
-    const [uploadedFileIds, setUploadedFileIds] = useState<string[]>([]);
     const [existingFiles] = useState(task.taskDocs || []);
     const [filesToRemove, setFilesToRemove] = useState<string[]>([]);
     const [uploading, setUploading] = useState(false);
 
-    // Reset form when task changes
+    // Reset form when task changes or modal opens
     useEffect(() => {
-        if (task) {
+        if (task && open) {
             setFormData({
                 title: task.title,
                 description: task.description || "",
                 priority: task.priority,
                 status: task.status,
-                parentId: task.parent?.id || "",
-                ideaId: task.idea?.id || "",
-                assignedTo: task.assigns.map(a => a.assignee.id),
             });
+
+            // Set initial selected employees from task.assigns
+            const initialEmployees: EmployeeItem[] = task.assigns.map(a => ({
+                id: a.assignee.id,
+                staffId: a.assignee.staffId,
+                firstName: a.assignee.firstName,
+                lastName: a.assignee.lastName,
+            }));
+            setSelectedEmployees(initialEmployees);
+
+            // Set initial idea if exists
+            if (task.idea) {
+                setSelectedIdea({
+                    id: task.idea.id,
+                    title: task.idea.title,
+                    description: task.idea.description,
+                });
+            } else {
+                setSelectedIdea(null);
+            }
+
+            // Set initial parent task if exists
+            if (task.parent) {
+                setSelectedParentTask({
+                    id: task.parent.id,
+                    title: task.parent.title,
+                });
+            } else {
+                setSelectedParentTask(null);
+            }
+
             setFiles([]);
-            setUploadedFileIds([]);
             setFilesToRemove([]);
         }
     }, [task, open]);
+
+    // Search functions wrapped for the component
+    const searchEmployeesFn: SearchFunction<EmployeeItem> = useCallback(async (query, page, limit) => {
+        const result = await searchEmployees(query, page, limit);
+        return {
+            items: result.items.map(emp => ({
+                id: emp.id,
+                staffId: emp.staffId,
+                firstName: emp.firstName,
+                lastName: emp.lastName,
+            })),
+            hasMore: result.hasMore,
+        };
+    }, []);
+
+    const searchIdeasFn: SearchFunction<IdeaItem> = useCallback(async (query, page, limit) => {
+        const result = await searchIdeas(query, page, limit);
+        return {
+            items: result.items.map(idea => ({
+                id: idea.id,
+                title: idea.title,
+                description: idea.description,
+            })),
+            hasMore: result.hasMore,
+        };
+    }, []);
+
+    const searchTasksFn: SearchFunction<TaskItem> = useCallback(async (query, page, limit) => {
+        const result = await searchTasks(query, page, limit);
+        return {
+            items: result.items.map(t => ({
+                id: t.id,
+                title: t.title,
+            })),
+            hasMore: result.hasMore,
+        };
+    }, []);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
@@ -104,20 +173,6 @@ export function EditTaskModal({ task, employees, ideas, tasks, open, onOpenChang
 
     const handleRemoveExistingFile = (fileId: string) => {
         setFilesToRemove([...filesToRemove, fileId]);
-    };
-
-    const handleAssigneeChange = (employeeId: string, checked: boolean) => {
-        if (checked) {
-            setFormData(prev => ({
-                ...prev,
-                assignedTo: [...prev.assignedTo, employeeId]
-            }));
-        } else {
-            setFormData(prev => ({
-                ...prev,
-                assignedTo: prev.assignedTo.filter(id => id !== employeeId)
-            }));
-        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -163,16 +218,16 @@ export function EditTaskModal({ task, employees, ideas, tasks, open, onOpenChang
                 description: formData.description || undefined,
                 priority: formData.priority,
                 status: formData.status,
-                assignedTo: formData.assignedTo.length > 0 ? formData.assignedTo : undefined,
+                assignedTo: selectedEmployees.length > 0 ? selectedEmployees.map(e => e.id) : undefined,
                 fileIds: allFileIds.length > 0 ? allFileIds : undefined,
             };
 
-            if (formData.parentId) {
-                updateData.parentId = formData.parentId;
+            if (selectedParentTask) {
+                updateData.parentId = selectedParentTask.id;
             }
 
-            if (formData.ideaId) {
-                updateData.ideaId = formData.ideaId;
+            if (selectedIdea) {
+                updateData.ideaId = selectedIdea.id;
             }
 
             const result = await updateTask(task.id, updateData);
@@ -285,73 +340,49 @@ export function EditTaskModal({ task, employees, ideas, tasks, open, onOpenChang
                             </div>
                         </div>
 
-                        {/* Parent Task */}
+                        {/* Parent Task - Searchable */}
                         <div className="grid gap-2">
-                            <Label htmlFor="parentTask">Parent Task</Label>
-                            <Select
-                                value={formData.parentId || "none"}
-                                onValueChange={(value) => setFormData({ ...formData, parentId: value === "none" ? "" : value })}
+                            <Label>Parent Task</Label>
+                            <AsyncSearchableSelect<TaskItem>
+                                mode="single"
+                                placeholder="Search parent task..."
+                                searchFn={searchTasksFn}
+                                displayValue={(t) => t.title}
+                                value={selectedParentTask}
+                                onChange={(val) => setSelectedParentTask(val as TaskItem | null)}
                                 disabled={loading}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="None" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="none">None</SelectItem>
-                                    {tasks.filter(t => t.id !== task.id).map((t) => (
-                                        <SelectItem key={t.id} value={t.id}>
-                                            {t.title}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                                excludeIds={[task.id]}
+                            />
                         </div>
 
-                        {/* Link to Idea */}
+                        {/* Link to Idea - Searchable */}
                         <div className="grid gap-2">
-                            <Label htmlFor="idea">Link to Idea</Label>
-                            <Select
-                                value={formData.ideaId || "none"}
-                                onValueChange={(value) => setFormData({ ...formData, ideaId: value === "none" ? "" : value })}
+                            <Label>Link to Idea</Label>
+                            <AsyncSearchableSelect<IdeaItem>
+                                mode="single"
+                                placeholder="Search ideas..."
+                                searchFn={searchIdeasFn}
+                                displayValue={(idea) => idea.title}
+                                secondaryValue={(idea) => idea.description || ""}
+                                value={selectedIdea}
+                                onChange={(val) => setSelectedIdea(val as IdeaItem | null)}
                                 disabled={loading}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="None" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="none">None</SelectItem>
-                                    {ideas.map((idea) => (
-                                        <SelectItem key={idea.id} value={idea.id}>
-                                            {idea.title}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            />
                         </div>
 
-                        {/* Assigned Employees */}
+                        {/* Assigned Employees - Searchable Multi-select */}
                         <div className="grid gap-2">
                             <Label>Assigned Employees</Label>
-                            <div className="border rounded-md p-3 max-h-[150px] overflow-y-auto">
-                                {employees.map((employee) => (
-                                    <div key={employee.id} className="flex items-center space-x-2 py-1">
-                                        <Checkbox
-                                            id={`employee-${employee.id}`}
-                                            checked={formData.assignedTo.includes(employee.id)}
-                                            onCheckedChange={(checked) =>
-                                                handleAssigneeChange(employee.id, checked as boolean)
-                                            }
-                                            disabled={loading}
-                                        />
-                                        <Label
-                                            htmlFor={`employee-${employee.id}`}
-                                            className="text-sm font-normal cursor-pointer"
-                                        >
-                                            {employee.firstName} {employee.lastName} ({employee.staffId})
-                                        </Label>
-                                    </div>
-                                ))}
-                            </div>
+                            <AsyncSearchableSelect<EmployeeItem>
+                                mode="multi"
+                                placeholder="Search employees..."
+                                searchFn={searchEmployeesFn}
+                                displayValue={(emp) => `${emp.firstName} ${emp.lastName}`}
+                                secondaryValue={(emp) => emp.staffId}
+                                value={selectedEmployees}
+                                onChange={(val) => setSelectedEmployees(val as EmployeeItem[])}
+                                disabled={loading}
+                            />
                         </div>
 
                         {/* File Upload */}

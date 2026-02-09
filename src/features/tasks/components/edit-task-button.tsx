@@ -6,31 +6,11 @@ import { EditTaskModal } from "@/features/tasks/components/edit-task-modal";
 import { Task } from "@/features/tasks/types";
 import { Edit } from "lucide-react";
 
-interface Employee {
-    id: string;
-    staffId: string;
-    firstName: string;
-    lastName: string;
-}
-
-interface Idea {
-    id: string;
-    title: string;
-}
-
-interface ParentTask {
-    id: string;
-    title: string;
-}
-
 interface EditTaskButtonProps {
     task: Task;
-    employees: Employee[];
-    ideas: Idea[];
-    tasks: ParentTask[];
 }
 
-export function EditTaskButton({ task, employees, ideas, tasks }: EditTaskButtonProps) {
+export function EditTaskButton({ task }: EditTaskButtonProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     return (
@@ -47,9 +27,6 @@ export function EditTaskButton({ task, employees, ideas, tasks }: EditTaskButton
 
             <EditTaskModal
                 task={task}
-                employees={employees}
-                ideas={ideas}
-                tasks={tasks}
                 open={isModalOpen}
                 onOpenChange={setIsModalOpen}
             />

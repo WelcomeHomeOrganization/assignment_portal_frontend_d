@@ -50,6 +50,55 @@ export async function getTasks(page: number = 1, limit: number = 10): Promise<Ge
     }
 }
 
+export interface SearchTasksResult {
+    items: Task[];
+    hasMore: boolean;
+}
+
+export async function searchTasks(query: string = "", page: number = 1, limit: number = 20): Promise<SearchTasksResult> {
+    const baseUrl = process.env.BACKEND_LINK;
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get("session")?.value;
+    const session = await decrypt(sessionCookie);
+
+    const emptyResult: SearchTasksResult = {
+        items: [],
+        hasMore: false
+    };
+
+    if (!session?.accessToken) {
+        return emptyResult;
+    }
+
+    try {
+        const searchParam = query ? `&search=${encodeURIComponent(query)}` : "";
+        const response = await fetch(`${baseUrl}/task?page=${page}&limit=${limit}${searchParam}`, {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${session.accessToken}`,
+                "Content-Type": "application/json",
+            },
+        });
+
+        if (!response.ok) {
+            console.error("Failed to search tasks:", response.statusText);
+            return emptyResult;
+        }
+
+        const data: TasksResponse = await response.json();
+        const tasks = data.tasks || [];
+        const meta = data.meta || { page: 1, limit: 20, total: 0, totalPages: 0 };
+
+        return {
+            items: tasks,
+            hasMore: meta.page < meta.totalPages
+        };
+    } catch (error) {
+        console.error("Error searching tasks:", error);
+        return emptyResult;
+    }
+}
+
 export async function getMyAssignedTasks(page: number = 1, limit: number = 10): Promise<GetTasksResult> {
     const baseUrl = process.env.BACKEND_LINK;
     const cookieStore = await cookies();
@@ -323,8 +372,8 @@ export async function submitTask(data: TaskSubmissionData): Promise<ApiResponse>
 
         return {
             success: true,
-            message: data.finalSubmit 
-                ? "Task submitted successfully" 
+            message: data.finalSubmit
+                ? "Task submitted successfully"
                 : "Draft saved successfully"
         };
     } catch (error) {
