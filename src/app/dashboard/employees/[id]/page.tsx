@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Pencil } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import React from "react";
 
 // Force dynamic rendering to fetch fresh data on each request
 export const dynamic = 'force-dynamic';

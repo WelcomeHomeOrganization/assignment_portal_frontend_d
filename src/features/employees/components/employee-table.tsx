@@ -59,7 +59,7 @@ export function EmployeeTable({employees, meta}: EmployeeTableProps) {
                 <Table>
                     <TableHeader>
                         <TableRow className="bg-muted/50">
-                            <TableHead className="w-[60px]">S/N</TableHead>
+                            <TableHead className="w-15">S/N</TableHead>
                             <TableHead>Staff ID</TableHead>
                             <TableHead>Name</TableHead>
                             <TableHead>Email</TableHead>

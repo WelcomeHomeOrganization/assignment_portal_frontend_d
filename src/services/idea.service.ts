@@ -154,7 +154,7 @@ export async function createIdea(ideaData: { title: string; description: string 
     const sessionCookie = cookieStore.get("session")?.value;
     const session = await decrypt(sessionCookie);
 
-    console.log(session?.accessToken)
+    // console.log(session?.accessToken)
     if (!session?.accessToken) {
         return { success: false, message: "Unauthorized" };
     }
