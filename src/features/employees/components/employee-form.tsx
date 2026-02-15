@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Employee, Status, Gender, EmploymentType } from "@/features/employees/types";
-import { createEmployee, updateEmployee } from "@/services/employee.service";
+import { Employee, Status, Gender, EmploymentType, Department } from "@/features/employees/types";
+import { createEmployee, updateEmployee, getDepartments } from "@/services/employee.service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +25,15 @@ export function EmployeeForm({ employee, mode }: EmployeeFormProps) {
     const router = useRouter();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errors, setErrors] = useState<FormErrors>({});
+    const [departments, setDepartments] = useState<Department[]>([]);
+
+    useEffect(() => {
+        const fetchDepartments = async () => {
+            const { departments } = await getDepartments();
+            setDepartments(departments);
+        };
+        fetchDepartments();
+    }, []);
 
     const [formData, setFormData] = useState({
         staffId: employee?.staffId || "",
@@ -37,7 +46,8 @@ export function EmployeeForm({ employee, mode }: EmployeeFormProps) {
         joinDate: employee?.joinDate || new Date().toISOString().split("T")[0],
         lastDate: employee?.lastDate || "",
         status: (employee?.status as Status) || Status.ACTIVE,
-        departmentId: employee?.department || "",
+        departmentId: employee?.department?.id || "",
+        designation: employee?.designation || "",
         fileId: employee?.profilePicture?.id || "",
     });
 
@@ -77,6 +87,9 @@ export function EmployeeForm({ employee, mode }: EmployeeFormProps) {
         if (!formData.lastName) {
             newErrors.lastName = "Last name is required";
         }
+        if (!formData.designation) {
+            newErrors.designation = "Designation is required";
+        }
         if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
             newErrors.email = "Please enter a valid email";
         }
@@ -104,6 +117,7 @@ export function EmployeeForm({ employee, mode }: EmployeeFormProps) {
             mobileNumber: formData.mobileNumber || null,
             lastDate: formData.lastDate || null,
             departmentId: formData.departmentId || null,
+            designation: formData.designation,
             fileId: formData.fileId || null,
         };
 
@@ -178,6 +192,20 @@ export function EmployeeForm({ employee, mode }: EmployeeFormProps) {
                             />
                             {errors.lastName && (
                                 <p className="text-sm text-red-500">{errors.lastName}</p>
+                            )}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="designation">Designation *</Label>
+                            <Input
+                                id="designation"
+                                name="designation"
+                                placeholder="e.g. Software Engineer"
+                                value={formData.designation}
+                                onChange={handleChange}
+                            />
+                            {errors.designation && (
+                                <p className="text-sm text-red-500">{errors.designation}</p>
                             )}
                         </div>
 
@@ -259,6 +287,25 @@ export function EmployeeForm({ employee, mode }: EmployeeFormProps) {
                             </select>
                         </div>
 
+                        {/* Department Selection */}
+                        <div className="space-y-2">
+                            <Label htmlFor="departmentId">Department</Label>
+                            <select
+                                id="departmentId"
+                                name="departmentId"
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                value={formData.departmentId}
+                                onChange={handleChange}
+                            >
+                                <option value="">Select Department</option>
+                                {departments.map((dept) => (
+                                    <option key={dept.id} value={dept.id}>
+                                        {dept.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
                         <div className="space-y-2">
                             <Label htmlFor="joinDate">Join Date *</Label>
                             <Input
@@ -273,19 +320,21 @@ export function EmployeeForm({ employee, mode }: EmployeeFormProps) {
                             )}
                         </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="lastDate">Last Date</Label>
-                            <Input
-                                id="lastDate"
-                                name="lastDate"
-                                type="date"
-                                value={formData.lastDate}
-                                onChange={handleChange}
-                            />
-                            {errors.lastDate && (
-                                <p className="text-sm text-red-500">{errors.lastDate}</p>
-                            )}
-                        </div>
+                        {mode === "edit" && (
+                            <div className="space-y-2">
+                                <Label htmlFor="lastDate">Last Date</Label>
+                                <Input
+                                    id="lastDate"
+                                    name="lastDate"
+                                    type="date"
+                                    value={formData.lastDate}
+                                    onChange={handleChange}
+                                />
+                                {errors.lastDate && (
+                                    <p className="text-sm text-red-500">{errors.lastDate}</p>
+                                )}
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 

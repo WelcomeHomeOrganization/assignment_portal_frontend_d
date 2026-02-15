@@ -62,6 +62,8 @@ export function EmployeeTable({employees, meta}: EmployeeTableProps) {
                             <TableHead className="w-15">S/N</TableHead>
                             <TableHead>Staff ID</TableHead>
                             <TableHead>Name</TableHead>
+                            <TableHead>Designation</TableHead>
+                            <TableHead>Department</TableHead>
                             <TableHead>Email</TableHead>
                             <TableHead>Mobile</TableHead>
                             <TableHead>Gender</TableHead>
@@ -83,6 +85,8 @@ export function EmployeeTable({employees, meta}: EmployeeTableProps) {
                                 <TableCell className="font-medium">
                                     {employee.firstName} {employee.lastName}
                                 </TableCell>
+                                <TableCell>{employee.designation || "-"}</TableCell>
+                                <TableCell>{employee.department?.name || "-"}</TableCell>
                                 <TableCell>{employee.email}</TableCell>
                                 <TableCell>
                                     {employee.mobileNumber || <span className="text-muted-foreground">—</span>}
@@ -118,7 +122,7 @@ export function EmployeeTable({employees, meta}: EmployeeTableProps) {
                                             asChild
                                         >
                                             <Link href={`/dashboard/employees/${employee.id}`}>
-                                                <Eye className="h-4 w-4"/>
+                                                <Eye className="h-4 w-4" />
                                             </Link>
                                         </Button>
                                         <Button
@@ -128,7 +132,7 @@ export function EmployeeTable({employees, meta}: EmployeeTableProps) {
                                             asChild
                                         >
                                             <Link href={`/dashboard/employees/${employee.id}/edit`}>
-                                                <Pencil className="h-4 w-4"/>
+                                                <Pencil className="h-4 w-4" />
                                             </Link>
                                         </Button>
                                     </div>

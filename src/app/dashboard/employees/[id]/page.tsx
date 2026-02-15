@@ -107,7 +107,12 @@ export default async function EmployeeViewPage({ params }: EmployeeViewPageProps
                                 <InfoItem
                                     icon={<BuildingIcon className="h-5 w-5" />}
                                     label="Department"
-                                    value={employee.department || "Not assigned"}
+                                    value={employee.department?.name || "Not assigned"}
+                                />
+                                <InfoItem
+                                    icon={<BriefcaseIcon className="h-5 w-5" />}
+                                    label="Designation"
+                                    value={employee.designation || "Not assigned"}
                                 />
                                 <InfoItem
                                     icon={<CalendarIcon className="h-5 w-5" />}

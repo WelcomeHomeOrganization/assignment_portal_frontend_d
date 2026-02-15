@@ -2,7 +2,43 @@
 
 import { decrypt } from "@/lib/session";
 import { cookies } from "next/headers";
-import { Employee, PaginationMeta, EmployeesResponse } from "@/features/employees/types";
+import { Employee, PaginationMeta, EmployeesResponse, Department } from "@/features/employees/types";
+
+export interface GetDepartmentsResult {
+    departments: Department[];
+}
+
+export async function getDepartments(): Promise<GetDepartmentsResult> {
+    const baseUrl = process.env.BACKEND_LINK;
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get("session")?.value;
+    const session = await decrypt(sessionCookie);
+
+    if (!session?.accessToken) {
+        return { departments: [] };
+    }
+
+    try {
+        const response = await fetch(`${baseUrl}/employee/departments`, {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${session.accessToken}`,
+                "Content-Type": "application/json",
+            },
+        });
+
+        if (!response.ok) {
+            console.error("Failed to fetch departments:", response.statusText);
+            return { departments: [] };
+        }
+
+        const data = await response.json();
+        return { departments: data.departments || [] };
+    } catch (error) {
+        console.error("Error fetching departments:", error);
+        return { departments: [] };
+    }
+}
 
 export interface GetEmployeesResult {
     employees: Employee[];
@@ -183,7 +219,6 @@ export async function updateEmployee(id: string, employeeData: Record<string, un
     if (!session?.accessToken) {
         return { success: false, message: "Unauthorized" };
     }
-
     try {
         const response = await fetch(`${baseUrl}/employee/${id}`, {
             method: "PATCH",

@@ -11,10 +11,18 @@ export interface ProfilePicture {
     updatedAt: string;
 }
 
+export interface Department {
+    id: string;
+    name: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
 export interface Employee {
     id: string;
     staffId: string;
-    department: string | null;
+    department: Department | null;
+    designation: string;
     firstName: string;
     lastName: string;
     email: string;
@@ -63,6 +71,7 @@ export enum EmploymentType {
 // Create Employee DTO
 export interface CreateEmployeeDto {
     staffId: string;
+    designation: string;
     firstName: string;
     lastName: string;
     email: string;
@@ -79,6 +88,7 @@ export interface CreateEmployeeDto {
 // Update Employee DTO (all fields optional)
 export interface UpdateEmployeeDto {
     staffId?: string;
+    designation?: string;
     firstName?: string;
     lastName?: string;
     email?: string;
