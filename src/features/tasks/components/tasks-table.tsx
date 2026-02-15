@@ -256,12 +256,12 @@ export function TasksTable({ tasks, meta }: TasksTableProps) {
                                         <Tooltip>
                                             <TooltipTrigger asChild>
                                                 <span className="font-mono text-sm text-primary cursor-help underline decoration-dotted">
-                                                    {task.creator.staffId}
+                                                    {task.creator.firstName} {task.creator.lastName}
                                                 </span>
                                             </TooltipTrigger>
                                             <TooltipContent>
                                                 <p className="font-medium">
-                                                    {task.creator.firstName} {task.creator.lastName}
+                                                    {task.creator.staffId}
                                                 </p>
                                             </TooltipContent>
                                         </Tooltip>

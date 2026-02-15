@@ -78,7 +78,7 @@ export function IdeasTable({ ideas, meta, showActions = false }: IdeasTableProps
                             <TableHead className="w-[60px]">S/N</TableHead>
                             <TableHead>Title</TableHead>
                             <TableHead>Description</TableHead>
-                            <TableHead>Staff ID</TableHead>
+                            <TableHead>Staff Name</TableHead>
                             {showActions && <TableHead className="text-center">Actions</TableHead>}
                         </TableRow>
                     </TableHeader>
@@ -89,8 +89,10 @@ export function IdeasTable({ ideas, meta, showActions = false }: IdeasTableProps
                                     <TableCell className="font-medium">
                                         {getSerialNumber(index)}
                                     </TableCell>
-                                    <TableCell className="font-medium">
-                                        {idea.title}
+                                    <TableCell className="font-medium min-w-[200px] max-w-[300px]">
+                                        <div className="break-words whitespace-normal">
+                                            {idea.title}
+                                        </div>
                                     </TableCell>
                                     <TableCell className="max-w-md">
                                         <Tooltip>
@@ -114,12 +116,12 @@ export function IdeasTable({ ideas, meta, showActions = false }: IdeasTableProps
                                         <Tooltip>
                                             <TooltipTrigger asChild>
                                                 <span className="font-mono text-primary cursor-help underline decoration-dotted">
-                                                    {idea.creator.staffId}
+                                                    {idea.creator.firstName} {idea.creator.lastName}
                                                 </span>
                                             </TooltipTrigger>
                                             <TooltipContent>
                                                 <p className="font-medium">
-                                                    {idea.creator.firstName} {idea.creator.lastName}
+                                                    {idea.creator.staffId}
                                                 </p>
                                             </TooltipContent>
                                         </Tooltip>
