@@ -398,7 +398,7 @@ export async function submitTask(data: TaskSubmissionData): Promise<ApiResponse>
     }
 }
 
-export async function addTaskSubmissionNote(submissionId: string, note: string): Promise<ApiResponse> {
+export async function addTaskSubmissionNote(submissionId: string, note: string, fileIds?: string[]): Promise<ApiResponse> {
     const baseUrl = process.env.BACKEND_LINK;
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get("session")?.value;
@@ -415,7 +415,7 @@ export async function addTaskSubmissionNote(submissionId: string, note: string):
                 "Authorization": `Bearer ${session.accessToken}`,
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify({ submissionId, note }),
+            body: JSON.stringify({ submissionId, note, fileIds }),
         });
 
         const data = await response.json();

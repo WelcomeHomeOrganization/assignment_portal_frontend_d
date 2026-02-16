@@ -96,6 +96,7 @@ export interface TaskSubmissionNote {
     id: string;
     note: string;
     actor: Creator;
+    files?: TaskDoc[];
     createdAt: string;
     updatedAt: string;
 }

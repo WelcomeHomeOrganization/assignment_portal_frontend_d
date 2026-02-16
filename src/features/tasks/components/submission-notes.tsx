@@ -3,6 +3,7 @@
 import { TaskSubmissionNote } from "@/features/tasks/types";
 import { AddNoteModal } from "./add-note-modal";
 import { User } from "lucide-react";
+import { SubmissionFiles } from "./submission-files";
 
 interface SubmissionNotesProps {
     submissionId: string;
@@ -43,6 +44,11 @@ export function SubmissionNotes({ submissionId, notes, isCompleted = false }: Su
                                 </span>
                             </div>
                             <p className="text-muted-foreground whitespace-pre-wrap pl-8">{note.note}</p>
+                            {note.files && note.files.length > 0 && (
+                                <div className="pl-8">
+                                    <SubmissionFiles files={note.files} />
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>
