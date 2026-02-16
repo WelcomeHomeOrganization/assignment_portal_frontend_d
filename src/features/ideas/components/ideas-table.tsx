@@ -20,6 +20,9 @@ import {
 } from "@/components/ui/tooltip";
 import { EditIdeaModal } from "./edit-idea-modal";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { ListPlus } from "lucide-react";
+import Link from "next/link";
 
 interface IdeasTableProps {
     ideas: Idea[];
@@ -30,9 +33,10 @@ interface IdeasTableProps {
         totalPages: number;
     };
     showActions?: boolean;
+    showEdit?: boolean;
 }
 
-export function IdeasTable({ ideas, meta, showActions = false }: IdeasTableProps) {
+export function IdeasTable({ ideas, meta, showActions = false, showEdit = false }: IdeasTableProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
@@ -129,7 +133,19 @@ export function IdeasTable({ ideas, meta, showActions = false }: IdeasTableProps
                                     {showActions && (
                                         <TableCell>
                                             <div className="flex items-center justify-center gap-2">
-                                                <EditIdeaModal idea={idea} />
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button variant="ghost" size="icon" asChild>
+                                                            <Link href={`/dashboard/tasks/add?ideaId=${idea.id}`}>
+                                                                <ListPlus className="h-4 w-4" />
+                                                            </Link>
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>Create Task from Idea</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                                {showEdit && <EditIdeaModal idea={idea} />}
                                             </div>
                                         </TableCell>
                                     )}

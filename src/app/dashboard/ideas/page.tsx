@@ -12,7 +12,7 @@ interface IdeasPageProps {
 async function IdeasTableContent({ page }: { page: number }) {
     const { ideas, meta } = await getIdeas(page);
 
-    return <IdeasTable ideas={ideas} meta={meta} />;
+    return <IdeasTable ideas={ideas} meta={meta} showActions={true} showEdit={false} />;
 }
 
 function IdeasTableSkeleton() {

@@ -8,7 +8,7 @@ import { CreateIdeaModal } from "@/features/ideas/components/create-idea-modal";
 async function MyIdeasTableContent() {
     const { ideas, meta } = await getMyIdeas();
 
-    return <IdeasTable ideas={ideas} meta={meta} showActions={true} />;
+    return <IdeasTable ideas={ideas} meta={meta} showActions={true} showEdit={true} />;
 }
 
 function MyIdeasTableSkeleton() {

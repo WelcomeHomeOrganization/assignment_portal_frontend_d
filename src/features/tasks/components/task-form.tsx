@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,9 +17,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { TaskIcon } from "@/components/ui/icons";
-import { createTask } from "@/services/task.service";
+import { createTask, searchTasks } from "@/services/task.service";
 import { PriorityLevels } from "@/features/tasks/types";
+import { searchIdeas } from "@/services/idea.service";
 import { uploadFile, deleteFile } from "@/services/file.service";
+import { AsyncSearchableSelect } from "@/components/ui/async-searchable-select";
 import { Loader2, Upload, X, FileIcon } from "lucide-react";
 import Link from "next/link";
 
@@ -48,6 +50,7 @@ interface TaskFormProps {
 
 export default function TaskForm({ employees, ideas, tasks }: TaskFormProps) {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [loading, setLoading] = useState(false);
     const [fileUploading, setFileUploading] = useState(false);
     const [uploadedFiles, setUploadedFiles] = useState<Array<{ id: string; name: string }>>([]);
@@ -61,6 +64,26 @@ export default function TaskForm({ employees, ideas, tasks }: TaskFormProps) {
         ideaId: "",
         assignedTo: [] as string[],
     });
+
+    // State for AsyncSearchableSelect components
+    const [selectedParent, setSelectedParent] = useState<{ id: string; title: string } | null>(null);
+    const [selectedIdea, setSelectedIdea] = useState<{ id: string; title: string } | null>(null);
+
+    // Pre-fill from URL params
+    useEffect(() => {
+        const ideaIdParam = searchParams.get("ideaId");
+        if (ideaIdParam) {
+            const foundIdea = ideas.find(i => i.id === ideaIdParam);
+            if (foundIdea) {
+                setSelectedIdea(foundIdea);
+                setFormData(prev => ({
+                    ...prev,
+                    ideaId: foundIdea.id,
+                    title: prev.title ? prev.title : foundIdea.title
+                }));
+            }
+        }
+    }, [searchParams, ideas]);
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
@@ -272,46 +295,39 @@ export default function TaskForm({ employees, ideas, tasks }: TaskFormProps) {
 
                                 <div className="grid gap-2">
                                     <Label htmlFor="parentId">Parent Task (Optional - for Sub-tasks)</Label>
-                                    <Select
-                                        value={formData.parentId || "none"}
-                                        onValueChange={(value: string) =>
-                                            setFormData({ ...formData, parentId: value === "none" ? "" : value })
-                                        }
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select a parent task (optional)..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="none">None (top-level task)</SelectItem>
-                                            {tasks.map((task) => (
-                                                <SelectItem key={task.id} value={task.id}>
-                                                    {task.title}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <AsyncSearchableSelect
+                                        mode="single"
+                                        placeholder="Search for a parent task..."
+                                        searchFn={searchTasks}
+                                        value={selectedParent}
+                                        onChange={(val) => {
+                                            const item = val as { id: string; title: string } | null;
+                                            setSelectedParent(item);
+                                            setFormData({ ...formData, parentId: item?.id || "" });
+                                        }}
+                                        displayValue={(item) => item.title}
+                                    />
                                 </div>
 
                                 <div className="grid gap-2">
                                     <Label htmlFor="ideaId">Link to Idea (Optional)</Label>
-                                    <Select
-                                        value={formData.ideaId || "none"}
-                                        onValueChange={(value: string) =>
-                                            setFormData({ ...formData, ideaId: value === "none" ? "" : value })
-                                        }
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select an idea (optional)..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="none">None</SelectItem>
-                                            {ideas.map((idea) => (
-                                                <SelectItem key={idea.id} value={idea.id}>
-                                                    {idea.title}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <AsyncSearchableSelect
+                                        mode="single"
+                                        placeholder="Search for an idea..."
+                                        searchFn={searchIdeas}
+                                        value={selectedIdea}
+                                        onChange={(val) => {
+                                            const item = val as { id: string; title: string } | null;
+                                            setSelectedIdea(item);
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                ideaId: item?.id || "",
+                                                // Auto-fill title if empty
+                                                title: (item && !prev.title) ? item.title : prev.title
+                                            }));
+                                        }}
+                                        displayValue={(item) => item.title}
+                                    />
                                 </div>
                             </CardContent>
                         </Card>
