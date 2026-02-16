@@ -82,7 +82,7 @@ export function IdeasTable({ ideas, meta, showActions = false, showEdit = false 
                             <TableHead className="w-[60px]">S/N</TableHead>
                             <TableHead>Title</TableHead>
                             <TableHead>Description</TableHead>
-                            <TableHead>Staff Name</TableHead>
+                            <TableHead>Author</TableHead>
                             {showActions && <TableHead className="text-center">Actions</TableHead>}
                         </TableRow>
                     </TableHeader>
