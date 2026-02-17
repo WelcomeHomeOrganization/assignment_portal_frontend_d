@@ -19,10 +19,21 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Users, CornerDownRight } from "lucide-react";
+import { Users, CornerDownRight, Cross, X } from "lucide-react";
 import { Eye } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { useState } from "react";
+import { updateTask } from "@/services/task.service";
+import { toast } from "sonner";
 
 
 interface TasksTableProps {
@@ -33,6 +44,7 @@ interface TasksTableProps {
         total: number;
         totalPages: number;
     };
+    showCancelAction?: boolean;
 }
 
 // Helper function to get status badge color
@@ -48,6 +60,8 @@ const getStatusColor = (status: TaskStatus): string => {
             return "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400";
         case TaskStatus.COMPLETE:
             return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
+        case TaskStatus.CANCEL:
+            return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
         default:
             return "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400";
     }
@@ -71,9 +85,31 @@ const getPriorityColor = (priority: PriorityLevels): string => {
     }
 };
 
-export function TasksTable({ tasks, meta }: TasksTableProps) {
+export function TasksTable({ tasks, meta, showCancelAction = false }: TasksTableProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const [taskToCancel, setTaskToCancel] = useState<string | null>(null);
+    const [isCancelling, setIsCancelling] = useState(false);
+
+    const handleCancelTask = async () => {
+        if (!taskToCancel) return;
+
+        setIsCancelling(true);
+        try {
+            const result = await updateTask(taskToCancel, { status: TaskStatus.CANCEL });
+            if (result.success) {
+                toast.success("Task cancelled successfully");
+                router.refresh();
+                setTaskToCancel(null);
+            } else {
+                toast.error(result.message || "Failed to cancel task");
+            }
+        } catch (error) {
+            toast.error("An error occurred while cancelling the task");
+        } finally {
+            setIsCancelling(false);
+        }
+    };
 
     const getSerialNumber = (index: number) => {
         return (meta.page - 1) * meta.limit + index + 1;
@@ -282,6 +318,17 @@ export function TasksTable({ tasks, meta }: TasksTableProps) {
                                                     <Eye className="h-4 w-4" />
                                                 </Link>
                                             </Button>
+                                            {showCancelAction && task.status !== TaskStatus.CANCEL && task.status !== TaskStatus.COMPLETE && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    title="Cancel Task"
+                                                    className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/30"
+                                                    onClick={() => setTaskToCancel(task.id)}
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            )}
                                         </div>
                                     </TableCell>
                                 </TableRow>
@@ -304,6 +351,34 @@ export function TasksTable({ tasks, meta }: TasksTableProps) {
                     />
                 )}
             </div>
-        </div>
+
+
+            <Dialog open={!!taskToCancel} onOpenChange={(open) => !open && setTaskToCancel(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Cancel Task</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to cancel this task? This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setTaskToCancel(null)}
+                            disabled={isCancelling}
+                        >
+                            No, Keep It
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={handleCancelTask}
+                            disabled={isCancelling}
+                        >
+                            {isCancelling ? "Cancelling..." : "Yes, Cancel Task"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </div >
     );
 }

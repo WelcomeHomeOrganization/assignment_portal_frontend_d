@@ -5,6 +5,7 @@ export enum TaskStatus {
     ON_PROCESS = 'On Process',
     REVIEW = 'Review',
     COMPLETE = 'Complete',
+    CANCEL = 'Cancel',
 }
 
 export enum PriorityLevels {

@@ -14,7 +14,7 @@ interface MyCreatedTasksPageProps {
 async function MyCreatedTasksTableContent({ page }: { page: number }) {
     const { tasks, meta } = await getMyCreatedTasks(page);
 
-    return <TasksTable tasks={tasks} meta={meta} />;
+    return <TasksTable tasks={tasks} meta={meta} showCancelAction={true} />;
 }
 
 function TasksTableSkeleton() {

@@ -34,6 +34,8 @@ const getStatusColor = (status: TaskStatus): string => {
             return "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400";
         case TaskStatus.COMPLETE:
             return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
+        case TaskStatus.CANCEL:
+            return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
         default:
             return "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400";
     }
