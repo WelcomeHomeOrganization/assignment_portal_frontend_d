@@ -105,7 +105,7 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
                     </p>
                 </div>
                 <div className="flex gap-2">
-                    {isCreator && (
+                    {isCreator && task.status !== TaskStatus.CANCEL && (
                         <>
                             <EditTaskButton task={task} />
                             <ExtendDeadlineButton taskId={task.id} currentDeadline={deadlineToUse} />
