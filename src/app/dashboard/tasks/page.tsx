@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import Link from "next/link";
+import { CreateTaskModal } from "@/features/tasks/components/create-task-modal";
 
 interface TasksPageProps {
     searchParams: Promise<{ page?: string }>;
@@ -48,12 +49,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
                         View and manage all tasks in the system.
                     </p>
                 </div>
-                <Button asChild>
-                    <Link href="/dashboard/tasks/add" className="gap-2">
-                        <Plus className="h-4 w-4" />
-                        Create Task
-                    </Link>
-                </Button>
+                <CreateTaskModal />
             </div>
 
             <Suspense key={page} fallback={<TasksTableSkeleton />}>

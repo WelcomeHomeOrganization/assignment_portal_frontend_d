@@ -135,6 +135,44 @@ export async function searchEmployees(query: string = "", page: number = 1, limi
     }
 }
 
+// Helper for UI components to get formatted employee data
+export interface EmployeeSelectItem {
+    id: string;
+    staffId: string;
+    firstName: string;
+    lastName: string;
+    designation?: string;
+    email?: string;
+    avatar?: string;
+}
+
+export interface SearchEmployeesSelectResult {
+    items: EmployeeSelectItem[];
+    hasMore: boolean;
+}
+
+export async function searchEmployeesForSelect(query: string = "", page: number = 1, limit: number = 20): Promise<SearchEmployeesSelectResult> {
+    const result = await searchEmployees(query, page, limit);
+    const baseUrl = process.env.BACKEND_LINK;
+
+    const items = result.items.map(emp => ({
+        id: emp.id,
+        staffId: emp.staffId,
+        firstName: emp.firstName,
+        lastName: emp.lastName,
+        designation: emp.designation,
+        email: emp.email,
+        avatar: emp.profilePicture?.path
+            ? `${baseUrl}/${emp.profilePicture.path.replace(/\\/g, '/')}`
+            : undefined
+    }));
+
+    return {
+        items,
+        hasMore: result.hasMore
+    };
+}
+
 export async function getEmployeeById(id: string): Promise<Employee | null> {
     const baseUrl = process.env.BACKEND_LINK;
     const cookieStore = await cookies();

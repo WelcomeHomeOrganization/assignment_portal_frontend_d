@@ -20,17 +20,14 @@ import { TaskIcon } from "@/components/ui/icons";
 import { createTask, searchTasks } from "@/services/task.service";
 import { PriorityLevels } from "@/features/tasks/types";
 import { searchIdeas } from "@/services/idea.service";
+import { searchEmployeesForSelect, EmployeeSelectItem } from "@/services/employee.service";
 import { uploadFile, deleteFile } from "@/services/file.service";
 import { AsyncSearchableSelect } from "@/components/ui/async-searchable-select";
-import { Loader2, Upload, X, FileIcon } from "lucide-react";
+import { Loader2, Upload, X, FileIcon, User, Check } from "lucide-react";
 import Link from "next/link";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 
-interface Employee {
-    id: string;
-    staffId: string;
-    firstName: string;
-    lastName: string;
-}
 
 interface Idea {
     id: string;
@@ -43,12 +40,14 @@ interface Task {
 }
 
 interface TaskFormProps {
-    employees: Employee[];
-    ideas: Idea[];
-    tasks: Task[];
+    employees?: EmployeeSelectItem[]; // Made optional as we use async search now
+    ideas?: Idea[]; // Made optional
+    tasks?: Task[]; // Made optional
+    onSuccess?: () => void;
+    onCancel?: () => void;
 }
 
-export default function TaskForm({ employees, ideas, tasks }: TaskFormProps) {
+export default function TaskForm({ employees = [], ideas = [], tasks = [], onSuccess, onCancel }: TaskFormProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [loading, setLoading] = useState(false);
@@ -68,6 +67,7 @@ export default function TaskForm({ employees, ideas, tasks }: TaskFormProps) {
     // State for AsyncSearchableSelect components
     const [selectedParent, setSelectedParent] = useState<{ id: string; title: string } | null>(null);
     const [selectedIdea, setSelectedIdea] = useState<{ id: string; title: string } | null>(null);
+    const [selectedEmployees, setSelectedEmployees] = useState<EmployeeSelectItem[]>([]);
 
     // Pre-fill from URL params
     useEffect(() => {
@@ -84,6 +84,59 @@ export default function TaskForm({ employees, ideas, tasks }: TaskFormProps) {
             }
         }
     }, [searchParams, ideas]);
+
+    // Helper functions for AsyncSearchableSelect
+    const searchEmployeesFn = async (query: string): Promise<{ items: EmployeeSelectItem[]; hasMore: boolean }> => {
+        return await searchEmployeesForSelect(query);
+    };
+
+    const employeeDisplay = (item: EmployeeSelectItem) => `${item.firstName} ${item.lastName}`;
+    const employeeSecondary = (item: EmployeeSelectItem) => item.staffId;
+
+    const renderEmployeeOption = (item: EmployeeSelectItem, isSelected: boolean) => (
+        <div className="flex items-center gap-2 p-2 w-full">
+            <Avatar className="h-8 w-8">
+                <AvatarImage src={item.avatar} alt={`${item.firstName} ${item.lastName}`} />
+                <AvatarFallback>
+                    {item.firstName?.[0]}{item.lastName?.[0]}
+                </AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col flex-1 overflow-hidden">
+                <span className="font-medium truncate">{item.firstName} {item.lastName}</span>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span>{item.staffId}</span>
+                    {item.designation && (
+                        <>
+                            <span>•</span>
+                            <span className="truncate">{item.designation}</span>
+                        </>
+                    )}
+                </div>
+            </div>
+            {isSelected && <Check className="h-4 w-4 text-primary ml-auto" />}
+        </div>
+    );
+
+    const renderEmployeeSelected = (item: EmployeeSelectItem, onRemove?: (e: React.MouseEvent) => void) => (
+        <div className="flex items-center gap-1.5 bg-secondary text-secondary-foreground px-2 py-1 rounded-md text-xs group">
+            <Avatar className="h-4 w-4">
+                <AvatarImage src={item.avatar} />
+                <AvatarFallback className="text-[8px]">
+                    {item.firstName?.[0]}{item.lastName?.[0]}
+                </AvatarFallback>
+            </Avatar>
+            <span className="truncate max-w-[100px]">{item.firstName} {item.lastName}</span>
+            {onRemove && (
+                <button
+                    type="button"
+                    onClick={onRemove}
+                    className="ml-1 text-muted-foreground hover:text-foreground rounded-full p-0.5"
+                >
+                    <X className="h-3 w-3" />
+                </button>
+            )}
+        </div>
+    );
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
@@ -129,14 +182,8 @@ export default function TaskForm({ employees, ideas, tasks }: TaskFormProps) {
         }
     };
 
-    const handleEmployeeToggle = (employeeId: string) => {
-        setFormData(prev => ({
-            ...prev,
-            assignedTo: prev.assignedTo.includes(employeeId)
-                ? prev.assignedTo.filter(id => id !== employeeId)
-                : [...prev.assignedTo, employeeId]
-        }));
-    };
+
+    // handleEmployeeToggle is removed as we use AsyncSearchableSelect
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -177,6 +224,9 @@ export default function TaskForm({ employees, ideas, tasks }: TaskFormProps) {
 
         if (formData.assignedTo.length > 0) {
             taskData.assignedTo = formData.assignedTo;
+        } else if (selectedEmployees.length > 0) {
+            // Fallback if formData.assignedTo wasn't updated correctly, or just use selectedEmployees source of truth
+            taskData.assignedTo = selectedEmployees.map(e => e.id);
         }
 
         if (uploadedFiles.length > 0) {
@@ -187,7 +237,11 @@ export default function TaskForm({ employees, ideas, tasks }: TaskFormProps) {
 
         if (result.success) {
             toast.success(result.message || "Task created successfully");
-            router.push("/dashboard/tasks");
+            if (onSuccess) {
+                onSuccess();
+            } else {
+                router.push("/dashboard/tasks");
+            }
         } else {
             toast.error(result.message || "Failed to create task");
         }
@@ -196,35 +250,35 @@ export default function TaskForm({ employees, ideas, tasks }: TaskFormProps) {
     };
 
     return (
-        <div className="space-y-8 max-w-(--breakpoint-2xl) mx-auto">
+        <div className={onCancel ? "space-y-4" : "space-y-8 max-w-(--breakpoint-2xl) mx-auto"}>
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2 text-primary">
-                        <TaskIcon className="h-6 w-6" />
-                        <h1 className="text-3xl font-bold tracking-tight">Create Task</h1>
+            {/* Header - Only show if not in modal (no onCancel) */}
+            {!onCancel && (
+                <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2 text-primary">
+                            <TaskIcon className="h-6 w-6" />
+                            <h1 className="text-3xl font-bold tracking-tight">Create Task</h1>
+                        </div>
+                        <p className="text-muted-foreground">
+                            Fill in the details below to create a new task.
+                        </p>
                     </div>
-                    <p className="text-muted-foreground">
-                        Fill in the details below to create a new task.
-                    </p>
+                    <Button variant="outline" asChild>
+                        <Link href="/dashboard/tasks">
+                            ← Back to Tasks
+                        </Link>
+                    </Button>
                 </div>
-                <Button variant="outline" asChild>
-                    <Link href="/dashboard/tasks">
-                        ← Back to Tasks
-                    </Link>
-                </Button>
-            </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-6">
                     {/* Left Column */}
                     <div className="space-y-6">
                         {/* Basic Information */}
                         <Card>
-                            <CardHeader>
-                                <CardTitle>Basic Information</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
+                            <CardContent className="pt-6 space-y-4">
                                 <div className="grid gap-2">
                                     <Label htmlFor="title">
                                         Title <span className="text-red-500">*</span>
@@ -329,15 +383,34 @@ export default function TaskForm({ employees, ideas, tasks }: TaskFormProps) {
                                         displayValue={(item) => item.title}
                                     />
                                 </div>
+                                <div className="grid gap-2">
+                                    <Label>Assigned Employees</Label>
+                                    <AsyncSearchableSelect<EmployeeSelectItem>
+                                        mode="multi"
+                                        placeholder="Search employees..."
+                                        searchFn={searchEmployeesFn}
+                                        displayValue={employeeDisplay}
+                                        secondaryValue={employeeSecondary}
+                                        value={selectedEmployees}
+                                        onChange={(val) => {
+                                            const next = (val as EmployeeSelectItem[]) || [];
+                                            setSelectedEmployees(next);
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                assignedTo: next.map(e => e.id)
+                                            }));
+                                        }}
+                                        disabled={loading}
+                                        renderOption={renderEmployeeOption}
+                                        renderSelected={renderEmployeeSelected}
+                                    />
+                                </div>
                             </CardContent>
                         </Card>
 
                         {/* File Upload */}
                         <Card>
-                            <CardHeader>
-                                <CardTitle>Attachments</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
+                            <CardContent className="pt-6 space-y-4">
                                 <div className="grid gap-2">
                                     <Label htmlFor="file">Upload Files (Optional)</Label>
                                     <div className="flex items-center gap-2">
@@ -382,49 +455,6 @@ export default function TaskForm({ employees, ideas, tasks }: TaskFormProps) {
                             </CardContent>
                         </Card>
                     </div>
-
-                    {/* Right Column */}
-                    <div>
-                        {/* Assign Employees */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Assign to Employees (Optional)</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-3 max-h-[500px] overflow-y-auto">
-                                    {employees.length === 0 ? (
-                                        <p className="text-sm text-muted-foreground">No employees available</p>
-                                    ) : (
-                                        employees.map((employee) => (
-                                            <div key={employee.id} className="flex items-center space-x-2">
-                                                <Checkbox
-                                                    id={employee.id}
-                                                    checked={formData.assignedTo.includes(employee.id)}
-                                                    onCheckedChange={() => handleEmployeeToggle(employee.id)}
-                                                />
-                                                <label
-                                                    htmlFor={employee.id}
-                                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
-                                                >
-                                                    {employee.firstName} {employee.lastName}
-                                                    <span className="text-muted-foreground ml-2">
-                                                        ({employee.staffId})
-                                                    </span>
-                                                </label>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-                                {formData.assignedTo.length > 0 && (
-                                    <div className="mt-4 pt-4 border-t">
-                                        <p className="text-sm text-muted-foreground">
-                                            {formData.assignedTo.length} employee(s) selected
-                                        </p>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </div>
                 </div>
 
                 {/* Action Buttons */}
@@ -432,7 +462,13 @@ export default function TaskForm({ employees, ideas, tasks }: TaskFormProps) {
                     <Button
                         type="button"
                         variant="outline"
-                        onClick={() => router.push("/dashboard/tasks")}
+                        onClick={() => {
+                            if (onCancel) {
+                                onCancel();
+                            } else {
+                                router.push("/dashboard/tasks");
+                            }
+                        }}
                         disabled={loading}
                     >
                         Cancel
