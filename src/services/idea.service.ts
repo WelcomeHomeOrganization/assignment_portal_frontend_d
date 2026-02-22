@@ -148,7 +148,7 @@ export interface ApiResponse {
     errors?: Record<string, string[]>;
 }
 
-export async function createIdea(ideaData: { title: string; description: string }): Promise<ApiResponse> {
+export async function createIdea(ideaData: { title: string; description: string; visibility?: string; employeeIds?: string[]; departmentIds?: string[] }): Promise<ApiResponse> {
     const baseUrl = process.env.BACKEND_LINK;
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get("session")?.value;
@@ -186,7 +186,7 @@ export async function createIdea(ideaData: { title: string; description: string 
     }
 }
 
-export async function updateIdea(id: string, ideaData: { title: string; description: string }): Promise<ApiResponse> {
+export async function updateIdea(id: string, ideaData: { title: string; description: string; visibility?: string; employeeIds?: string[]; departmentIds?: string[] }): Promise<ApiResponse> {
     const baseUrl = process.env.BACKEND_LINK;
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get("session")?.value;

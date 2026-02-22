@@ -40,6 +40,25 @@ export async function getDepartments(): Promise<GetDepartmentsResult> {
     }
 }
 
+export interface SearchDepartmentsSelectResult {
+    items: Department[];
+    hasMore: boolean;
+}
+
+export async function searchDepartmentsForSelect(query: string = ""): Promise<SearchDepartmentsSelectResult> {
+    const result = await getDepartments();
+    const departments = result.departments || [];
+
+    // Client-side filtering
+    const items = query
+        ? departments.filter(d => d.name.toLowerCase().includes(query.toLowerCase()))
+        : departments;
+
+    return {
+        items,
+        hasMore: false // As it fetches all at once
+    };
+}
 export interface GetEmployeesResult {
     employees: Employee[];
     meta: PaginationMeta;

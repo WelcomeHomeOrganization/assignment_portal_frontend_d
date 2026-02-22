@@ -18,6 +18,9 @@ export interface Idea {
     id: string;
     title: string;
     description: string;
+    visibility?: 'public' | 'private';
+    employeeIds?: string[];
+    departmentIds?: string[];
     creator: Creator;
     createdAt: string;
     updatedAt: string;
