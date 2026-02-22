@@ -481,3 +481,46 @@ export async function reviewTaskSubmission(submissionId: string, status: 'approv
         };
     }
 }
+
+export async function createInstantTask(taskData: { title: string; description?: string; fileIds?: string[] }): Promise<ApiResponse> {
+    const baseUrl = process.env.BACKEND_LINK;
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get("session")?.value;
+    const session = await decrypt(sessionCookie);
+
+    if (!session?.accessToken) {
+        return { success: false, message: "Not authenticated" };
+    }
+
+    try {
+        const response = await fetch(`${baseUrl}/task/instant`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${session.accessToken}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(taskData),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            return {
+                success: false,
+                message: data.message || "Failed to create instant task"
+            };
+        }
+
+        return {
+            success: true,
+            message: "Instant task submitted successfully",
+            task: data.task
+        };
+    } catch (error) {
+        console.error("Error creating instant task:", error);
+        return {
+            success: false,
+            message: "An error occurred while creating the instant task"
+        };
+    }
+}

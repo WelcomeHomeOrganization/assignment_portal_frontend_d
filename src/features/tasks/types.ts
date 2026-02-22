@@ -169,3 +169,9 @@ export interface TaskSubmissionData {
     fileIds?: string[];
     finalSubmit?: boolean;
 }
+
+export interface CreateInstantTaskData {
+    title: string;
+    description?: string;
+    fileIds?: string[];
+}

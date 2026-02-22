@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,8 +13,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Card, CardContent } from "@/components/ui/card";
+
 import { toast } from "sonner";
 import { TaskIcon } from "@/components/ui/icons";
 import { createTask, searchTasks } from "@/services/task.service";
@@ -23,33 +23,18 @@ import { searchIdeas } from "@/services/idea.service";
 import { searchEmployeesForSelect, EmployeeSelectItem } from "@/services/employee.service";
 import { uploadFile, deleteFile } from "@/services/file.service";
 import { AsyncSearchableSelect } from "@/components/ui/async-searchable-select";
-import { Loader2, Upload, X, FileIcon, User, Check } from "lucide-react";
+import { Loader2, X, FileIcon, Check } from "lucide-react";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { cn } from "@/lib/utils";
 
-
-interface Idea {
-    id: string;
-    title: string;
-}
-
-interface Task {
-    id: string;
-    title: string;
-}
 
 interface TaskFormProps {
-    employees?: EmployeeSelectItem[]; // Made optional as we use async search now
-    ideas?: Idea[]; // Made optional
-    tasks?: Task[]; // Made optional
     onSuccess?: () => void;
     onCancel?: () => void;
 }
 
-export default function TaskForm({ employees = [], ideas = [], tasks = [], onSuccess, onCancel }: TaskFormProps) {
+export default function TaskForm({ onSuccess, onCancel }: TaskFormProps) {
     const router = useRouter();
-    const searchParams = useSearchParams();
     const [loading, setLoading] = useState(false);
     const [fileUploading, setFileUploading] = useState(false);
     const [uploadedFiles, setUploadedFiles] = useState<Array<{ id: string; name: string }>>([]);
@@ -69,21 +54,7 @@ export default function TaskForm({ employees = [], ideas = [], tasks = [], onSuc
     const [selectedIdea, setSelectedIdea] = useState<{ id: string; title: string } | null>(null);
     const [selectedEmployees, setSelectedEmployees] = useState<EmployeeSelectItem[]>([]);
 
-    // Pre-fill from URL params
-    useEffect(() => {
-        const ideaIdParam = searchParams.get("ideaId");
-        if (ideaIdParam) {
-            const foundIdea = ideas.find(i => i.id === ideaIdParam);
-            if (foundIdea) {
-                setSelectedIdea(foundIdea);
-                setFormData(prev => ({
-                    ...prev,
-                    ideaId: foundIdea.id,
-                    title: prev.title ? prev.title : foundIdea.title
-                }));
-            }
-        }
-    }, [searchParams, ideas]);
+
 
     // Helper functions for AsyncSearchableSelect
     const searchEmployeesFn = async (query: string): Promise<{ items: EmployeeSelectItem[]; hasMore: boolean }> => {
@@ -224,9 +195,6 @@ export default function TaskForm({ employees = [], ideas = [], tasks = [], onSuc
 
         if (formData.assignedTo.length > 0) {
             taskData.assignedTo = formData.assignedTo;
-        } else if (selectedEmployees.length > 0) {
-            // Fallback if formData.assignedTo wasn't updated correctly, or just use selectedEmployees source of truth
-            taskData.assignedTo = selectedEmployees.map(e => e.id);
         }
 
         if (uploadedFiles.length > 0) {
