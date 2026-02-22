@@ -5,10 +5,14 @@ import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CreateIdeaModal } from "@/features/ideas/components/create-idea-modal";
 
-async function MyIdeasTableContent() {
-    const { ideas, meta } = await getMyIdeas();
+interface MyIdeasPageProps {
+    searchParams: Promise<{ page?: string }>;
+}
 
-    return <IdeasTable ideas={ideas} meta={meta} showActions={true} showEdit={true} />;
+async function MyIdeasTableContent({ page }: { page: number }) {
+    const { ideas, meta } = await getMyIdeas(page);
+
+    return <IdeasTable ideas={ideas} meta={meta} showActions={true} showEdit={true} showVisibility={true} />;
 }
 
 function MyIdeasTableSkeleton() {
@@ -26,7 +30,10 @@ function MyIdeasTableSkeleton() {
     );
 }
 
-export default async function MyIdeasPage() {
+export default async function MyIdeasPage({ searchParams }: MyIdeasPageProps) {
+    const params = await searchParams;
+    const page = Number(params.page) || 1;
+
     return (
         <div className="space-y-8 max-w-(--breakpoint-2xl) mx-auto">
             <div className="flex items-center justify-between">
@@ -42,8 +49,8 @@ export default async function MyIdeasPage() {
                 <CreateIdeaModal />
             </div>
 
-            <Suspense fallback={<MyIdeasTableSkeleton />}>
-                <MyIdeasTableContent />
+            <Suspense key={page} fallback={<MyIdeasTableSkeleton />}>
+                <MyIdeasTableContent page={page} />
             </Suspense>
         </div>
     );

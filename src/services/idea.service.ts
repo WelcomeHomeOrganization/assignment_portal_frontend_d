@@ -100,7 +100,7 @@ export async function searchIdeas(query: string = "", page: number = 1, limit: n
     }
 }
 
-export async function getMyIdeas(): Promise<GetIdeasResult> {
+export async function getMyIdeas(page: number = 1, limit: number = 10): Promise<GetIdeasResult> {
     const baseUrl = process.env.BACKEND_LINK;
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get("session")?.value;
@@ -116,7 +116,7 @@ export async function getMyIdeas(): Promise<GetIdeasResult> {
     }
 
     try {
-        const response = await fetch(`${baseUrl}/idea/employee`, {
+        const response = await fetch(`${baseUrl}/idea/employee?page=${page}&limit=${limit}`, {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${session.accessToken}`,
@@ -133,14 +133,13 @@ export async function getMyIdeas(): Promise<GetIdeasResult> {
 
         return {
             ideas: data.ideas || [],
-            meta: { page: 1, limit: data.ideas?.length || 0, total: data.ideas?.length || 0, totalPages: 1 }
+            meta: data.meta || { page: 1, limit: 10, total: 0, totalPages: 0 }
         };
     } catch (error) {
         console.error("Error fetching my ideas:", error);
         return emptyResult;
     }
 }
-
 
 export interface ApiResponse {
     success: boolean;

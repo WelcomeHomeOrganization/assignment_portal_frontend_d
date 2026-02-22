@@ -38,18 +38,37 @@ interface EditIdeaModalProps {
 export function EditIdeaModal({ idea }: EditIdeaModalProps) {
     const [open, setOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Pre-populate selected employees from employeeAccesses (API response) or fall back to employeeIds
+    const initialEmployees: EmployeeSelectItem[] = (idea.employeeAccesses ?? []).map(a => ({
+        id: a.employee.id,
+        staffId: a.employee.staffId,
+        firstName: a.employee.firstName,
+        lastName: a.employee.lastName,
+        designation: a.employee.designation ?? undefined,
+        avatar: a.employee.profilePicture?.path ?? undefined,
+    }));
+
+    // Pre-populate selected departments from departmentAccesses (API response)
+    const initialDepartments: Department[] = (idea.departmentAccesses ?? []).map(a => ({
+        id: a.departmentId,
+        name: a.department?.name ?? "",
+        createdAt: "",
+        updatedAt: "",
+    }));
+
     const [formData, setFormData] = useState({
         title: idea.title,
         description: idea.description,
-        visibility: idea.visibility || "public",
-        employeeIds: idea.employeeIds || [],
-        departmentIds: idea.departmentIds || [],
+        visibility: idea.visibility || "public" as 'public' | 'private',
+        employeeIds: initialEmployees.map(e => e.id),
+        departmentIds: initialDepartments.map(d => d.id),
     });
     const router = useRouter();
 
-    // State for Selects
-    const [selectedEmployees, setSelectedEmployees] = useState<EmployeeSelectItem[]>([]);
-    const [selectedDepartments, setSelectedDepartments] = useState<Department[]>([]);
+    // State for Selects — initialized with existing accesses
+    const [selectedEmployees, setSelectedEmployees] = useState<EmployeeSelectItem[]>(initialEmployees);
+    const [selectedDepartments, setSelectedDepartments] = useState<Department[]>(initialDepartments);
 
     const handleSearchDepartments = useCallback((query: string) => searchDepartmentsForSelect(query), []);
     const handleSearchEmployees = useCallback((query: string) => searchEmployeesForSelect(query), []);
