@@ -17,6 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { logoutAction } from "@/services/auth.service";
 import { InstantTaskModal } from "@/features/tasks/components/instant-task-modal";
+import { NotificationDropdown } from "./notification-dropdown";
 
 interface DashboardHeaderProps {
     user?: {
@@ -49,12 +50,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
 
             <div className="flex items-center gap-4">
                 <InstantTaskModal />
-
-                <Button variant="ghost" size="icon" className="relative">
-                    <BellIcon className="h-5 w-5" />
-                    <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-600" />
-                </Button>
-
+                <NotificationDropdown employeeId={user?.id} />
                 <ModeToggle />
 
                 <DropdownMenu>
