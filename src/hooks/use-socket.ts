@@ -1,40 +1,47 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { useEffect, useRef, useState } from "react";
+import { io, Socket } from "socket.io-client";
 
-export const useSocket = (employeeId: string | undefined) => {
-    const [socket, setSocket] = useState<Socket | null>(null);
+export const useSocket = (employeeId?: string) => {
+
+    const socketRef = useRef<Socket | null>(null);
     const [isConnected, setIsConnected] = useState(false);
-
+    const [socketInstance, setSocketInstance] = useState<Socket | null>(null);
     useEffect(() => {
         if (!employeeId) return;
 
-        const backendUrl = process.env.BACKEND_LINK || "http://localhost:3001";
+        const backendUrl =
+            process.env.NEXT_PUBLIC_BACKEND_LINK || "http://localhost:3001";
 
-        const socketInstance = io(`${backendUrl}/notifications`, {
+        const socket = io(`${backendUrl}/notifications`, {
             query: { employeeId },
+            transports: ["websocket"],
             withCredentials: true,
-            transports: ['websocket', 'polling']
         });
 
-        const onConnect = () => {
+        socketRef.current = socket;
+        setSocketInstance(socket);
+        socket.on("connect", () => {
             console.log('Connected to notification server! 🚀');
             setIsConnected(true);
-        };
-        const onDisconnect = () => setIsConnected(false);
-        const onError = (error: any) => console.error('Connection error:', error);
+        });
 
-        socketInstance.on("connect", onConnect);
-        socketInstance.on("connect_error", onError);
-        socketInstance.on("disconnect", onDisconnect);
+        socket.on("disconnect", () => {
+            setIsConnected(false);
+        });
 
-        setSocket(socketInstance);
+        socket.on("connect_error", (err) => {
+            console.error("Socket error:", err.message);
+        });
 
         return () => {
-            socketInstance.disconnect();
+            socket.disconnect();
+            socketRef.current = null;
+            setSocketInstance(null);
         };
+
     }, [employeeId]);
 
-    return { socket, isConnected };
+    return { socket: socketInstance, isConnected };
 };

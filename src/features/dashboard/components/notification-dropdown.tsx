@@ -17,7 +17,6 @@ import { Notification } from "@/features/notifications/types";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-
 import { useSocket } from "@/hooks/use-socket";
 
 // Utility to format relative time
@@ -67,32 +66,39 @@ export function NotificationDropdown({ employeeId }: NotificationDropdownProps) 
         fetchNotifications();
     }, [fetchNotifications]);
 
-    // Handle WebSocket events
     useEffect(() => {
-        
+
         if (!socket) return;
 
         const handleNewNotification = (data: any) => {
-            console.log("WebSocket received event 'notifications':", data);
 
-            // Handle both single notification object and array of notifications
             if (Array.isArray(data)) {
-                // If the backend sends the full list, you might want to replace the list completely
-                // or just prepend the new ones. Assuming it's a single new item typically,
-                // but let's handle it just in case:
+
                 setNotifications(prev => {
                     const newItems = data.filter(d => !prev.some(p => p.id === d.id));
                     return [...newItems, ...prev];
                 });
-                setUnreadCount(prev => prev + data.filter((n: any) => !n.isRead).length);
+
+                const unreadNew = data.filter((n: any) => !n.isRead).length;
+                if (unreadNew) setUnreadCount(prev => prev + unreadNew);
+
             } else {
-                setNotifications(prev => [data, ...prev]);
-                setUnreadCount(prev => prev + 1);
-                toast("New Notification", { description: data.title || "You have a new notification" });
+
+                setNotifications(prev => {
+                    if (prev.some(n => n.id === data.id)) return prev;
+                    return [data, ...prev];
+                });
+
+                if (!data.isRead) {
+                    setUnreadCount(prev => prev + 1);
+                }
+
+                toast("New Notification", {
+                    description: data.title || "You have a new notification"
+                });
             }
         };
 
-        // Listen on BOTH possible event names just to be safe during debugging
         socket.on("notifications", handleNewNotification);
         socket.on("new_notification", handleNewNotification);
 
@@ -100,6 +106,7 @@ export function NotificationDropdown({ employeeId }: NotificationDropdownProps) 
             socket.off("notifications", handleNewNotification);
             socket.off("new_notification", handleNewNotification);
         };
+
     }, [socket]);
 
     const handleMarkAsRead = async (e: React.MouseEvent, id: string) => {
@@ -149,7 +156,7 @@ export function NotificationDropdown({ employeeId }: NotificationDropdownProps) 
         if (notification.type === "NEW_IDEA" && notification.payload?.ideaId) {
             // Can navigate to my-ideas or a specific idea page if it exists
             // router.push(`/dashboard/ideas/${notification.payload.ideaId}`);
-            router.push(`/dashboard/ideas`);
+            router.push(`/dashboard/my-ideas`);
         } else if (notification.type === "NEW_TASK" && notification.payload?.taskId) {
             // router.push(`/dashboard/tasks/${notification.payload.taskId}`);
             router.push(`/dashboard/tasks`);
