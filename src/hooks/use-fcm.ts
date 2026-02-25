@@ -16,16 +16,22 @@ export const useFCM = () => {
             try {
                 if (!("serviceWorker" in navigator)) return;
 
-                // ⭐ simple registration
-                const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+                // ⭐ 1. Move swUrl inside the useEffect so it only runs on the client
+                const swUrl = `/firebase-messaging-sw.js?apiKey=${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}&projectId=${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}&messagingSenderId=${process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}&appId=${process.env.NEXT_PUBLIC_FIREBASE_APP_ID}`;
+
+                // ⭐ 2. Register the service worker using the swUrl with your env variables
+                const registration = await navigator.serviceWorker.register(swUrl);
+                // console.log("Service Worker registered:", registration);
 
                 // ⭐ ask permission safely
                 if (!("Notification" in window)) return;
 
                 const permission = await Notification.requestPermission();
+                // console.log("Notification permission:", permission);
                 if (permission !== "granted") return;
 
                 const msg = await messaging();
+                // console.log("FCM messaging instance:", msg);
                 if (!msg) return;
 
                 const token = await getToken(msg, {
@@ -33,7 +39,7 @@ export const useFCM = () => {
                     serviceWorkerRegistration: registration,
                 });
 
-                console.log("FCM Token Generated:", token);
+                // console.log("FCM Token Generated:", token);
 
                 if (token) {
                     setFcmToken(token);
@@ -42,15 +48,14 @@ export const useFCM = () => {
                 }
 
                 // ⭐ foreground listener (SAFE)
-                // 2. Assign the listener to the outer variable
                 unsubscribeFromMessages = onMessage(msg, (payload) => {
-                    console.log("Foreground message received:", payload);
-                    toast("New Notification From FCM", {
-                        description:
-                            payload.notification?.title ||
-                            payload.notification?.body ||
-                            "You have a new message",
-                    });
+                    // console.log("Foreground message received:", payload);
+                    // toast("New Notification From FCM", {
+                    //     description:
+                    //         payload.notification?.title ||
+                    //         payload.notification?.body ||
+                    //         "You have a new message",
+                    // });
                 });
 
             } catch (err) {
