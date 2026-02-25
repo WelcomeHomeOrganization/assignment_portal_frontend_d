@@ -32,7 +32,7 @@ export const useSocket = (employeeId?: string) => {
         });
 
         socket.on("connect_error", (err) => {
-            console.error("Socket error:", err.message);
+            console.warn("Socket connection failed:", err.message);
         });
 
         return () => {

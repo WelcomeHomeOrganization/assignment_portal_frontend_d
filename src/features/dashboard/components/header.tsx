@@ -18,6 +18,7 @@ import Link from "next/link";
 import { logoutAction } from "@/services/auth.service";
 import { InstantTaskModal } from "@/features/tasks/components/instant-task-modal";
 import { NotificationDropdown } from "./notification-dropdown";
+import { useFCM } from "@/hooks/use-fcm";
 
 interface DashboardHeaderProps {
     user?: {
@@ -28,6 +29,8 @@ interface DashboardHeaderProps {
 }
 
 export function DashboardHeader({ user }: DashboardHeaderProps) {
+    useFCM(); // Call hook to initialize FCM and request permissions
+
     const initials = user?.name
         ? user.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
         : "AD";

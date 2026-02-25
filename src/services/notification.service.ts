@@ -101,3 +101,38 @@ export async function markAllNotificationsAsRead(): Promise<boolean> {
         return false;
     }
 }
+
+export async function registerDeviceToken(token: string): Promise<boolean> {
+    const baseUrl = process.env.BACKEND_LINK;
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get("session")?.value;
+    const session = await decrypt(sessionCookie);
+
+    if (!session?.accessToken) {
+        return false;
+    }
+
+    try {
+        const response = await fetch(`${baseUrl}/notifications/token`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${session.accessToken}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                token,
+                platform: "WEB"
+            })
+        });
+
+        if (!response.ok) {
+            console.error("Failed to register device token:", response.statusText);
+            return false;
+        }
+
+        return true;
+    } catch (error) {
+        console.error("Error registering device token:", error);
+        return false;
+    }
+}
