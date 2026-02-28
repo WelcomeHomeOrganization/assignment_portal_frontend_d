@@ -35,13 +35,15 @@ interface IdeasTableProps {
     showActions?: boolean;
     showEdit?: boolean;
     showVisibility?: boolean;
+    currentUserId?: string;
 }
 
-export function IdeasTable({ ideas, meta, showActions = false, showEdit = false, showVisibility = false }: IdeasTableProps) {
+export function IdeasTable({ ideas, meta, showActions = false, showEdit = false, showVisibility = false, currentUserId }: IdeasTableProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
 
+    // console.log(currentUserId, ideas[1].creator.user?.id, showEdit)
     const getSerialNumber = (index: number) => {
         return (meta.page - 1) * meta.limit + index + 1;
     };
@@ -208,7 +210,9 @@ export function IdeasTable({ ideas, meta, showActions = false, showEdit = false,
                                                         <p>Create Task from Idea</p>
                                                     </TooltipContent>
                                                 </Tooltip>
-                                                {showEdit && <EditIdeaModal idea={idea} />}
+                                                {(showEdit && (currentUserId && idea.creator.user?.id === currentUserId)) && (
+                                                    <EditIdeaModal idea={idea} />
+                                                )}
                                             </div>
                                         </TableCell>
                                     )}

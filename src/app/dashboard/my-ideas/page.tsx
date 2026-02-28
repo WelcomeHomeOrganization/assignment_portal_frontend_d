@@ -4,6 +4,8 @@ import { IdeaIcon } from "@/components/ui/icons";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CreateIdeaModal } from "@/features/ideas/components/create-idea-modal";
+import { cookies } from "next/headers";
+import { decrypt } from "@/lib/session";
 
 interface MyIdeasPageProps {
     searchParams: Promise<{ page?: string }>;
@@ -12,7 +14,12 @@ interface MyIdeasPageProps {
 async function MyIdeasTableContent({ page }: { page: number }) {
     const { ideas, meta } = await getMyIdeas(page);
 
-    return <IdeasTable ideas={ideas} meta={meta} showActions={true} showEdit={true} showVisibility={true} />;
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get("session")?.value;
+    const session = await decrypt(sessionCookie);
+    const currentUserId = session?.user?.id;
+
+    return <IdeasTable ideas={ideas} meta={meta} showActions={true} showEdit={true} showVisibility={true} currentUserId={currentUserId} />;
 }
 
 function MyIdeasTableSkeleton() {

@@ -12,6 +12,9 @@ export interface Creator {
     lastDate: string | null;
     status: string;
     profilePicture?: { path: string } | null;
+    user?: {
+        id: string;
+    };
     createdAt: string;
     updatedAt: string;
 }
